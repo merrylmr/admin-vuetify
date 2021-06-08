@@ -1,13 +1,6 @@
 <template>
   <div id="app">
     <router-view></router-view>
-<!--    <div class="list">-->
-<!--      <div class="item"-->
-<!--           v-for="(value,key) in list"-->
-<!--           :key="key">-->
-<!--        {{ value }}-{{key}}-->
-<!--      </div>-->
-<!--    </div>-->
   </div>
 </template>
 
