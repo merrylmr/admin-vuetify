@@ -46,11 +46,17 @@
         </v-list>
       </v-navigation-drawer>
     </div>
-    <div>home</div>
+    <div>
+      home
+      <div id="map"></div>
+    </div>
   </div>
 
 </template>
 <script>
+
+
+
 export default {
   name: 'home',
   data() {
@@ -74,11 +80,27 @@ export default {
       return this.background ? 'https://cdn.vuetifyjs.com/images/backgrounds/bg-2.jpg' : undefined
     },
   },
+  methods: {
+
+  },
+  mounted() {
+  }
 }
 </script>
 
 <style scoped lang="scss">
-.home {
+.left-sidebar {
+  width: 300px;
+}
 
+.home {
+  display: flex;
+}
+
+#map {
+  position: relative;
+  width: 500px;
+  height: 500px;
+  border: 1px solid red;
 }
 </style>
