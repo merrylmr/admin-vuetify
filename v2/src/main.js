@@ -4,9 +4,11 @@ import App from './App.vue'
 import vuetify from './plugins/vuetify.js'
 import router from './router/index.js'
 
-Vue.config.productionTip = false
+import  './assets/scss/index.scss'
 
-console.log('router', router);
+Vue.config.productionTip = false
+import * as echarts from 'echarts';
+Vue.prototype.$echarts = echarts;
 new Vue({
     router,
     vuetify,

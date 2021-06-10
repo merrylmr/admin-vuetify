@@ -9,12 +9,24 @@ const routes = [
         path: '/',
         component: () => import ('@/views/Home.vue'),
         name: 'home',
+        children: [
+            {
+                path: '/dashboard',
+                component: () => import ('@/views/dashboard/Index.vue'),
+                name: 'dashboard',
+            },
+            {
+                path: '/canvas',
+                component: () => import ('@/views/charts/Canvas.vue'),
+                name: 'canvas',
+            },
+            {
+                path: '/map',
+                component: () => import ('@/views/charts/Map.vue'),
+                name: 'map',
+            }
+        ]
     },
-    {
-        path: '/canvas',
-        component: () => import ('@/views/charts/Canvas.vue'),
-        name: 'canvas',
-    }
 ]
 
 const router = new VueRouter({
