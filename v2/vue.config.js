@@ -4,7 +4,8 @@ module.exports = {
         resolve: {
             alias: {
                 '@': path.resolve(__dirname, 'src'),
-                json: path.join(__dirname, 'public/json')
+                json: path.join(__dirname, 'public/json'),
+                '/': path.join(__dirname, 'public'),
             }
         },
 

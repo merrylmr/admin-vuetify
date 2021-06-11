@@ -104,9 +104,6 @@ export default {
     }
   },
   computed: {
-    bg() {
-      return this.background ? 'https://cdn.vuetifyjs.com/images/backgrounds/bg-2.jpg' : undefined
-    },
   },
   methods: {
 
@@ -118,7 +115,7 @@ export default {
 
 <style scoped lang="scss">
 .left-sidebar {
-  width: 300px;
+  width: 276px;
 }
 
 .home {
