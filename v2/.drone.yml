@@ -1,0 +1,121 @@
+kind: pipeline
+type: docker
+name: admin-vuetify-v2
+workspace:
+  path: /drone/src/${DRONE_REPO_NAME}
+clone:
+  disable: true
+steps:
+  - name: clone
+    image: plugins/git
+    pull: if-not-exists
+    privileged: true
+    network_mode: bridge
+    volumes:
+      - name: git-cache
+        path: /drone/src/${DRONE_REPO_NAME}/.git
+  - name: install
+    image: node:10-alpine3.11
+    pull: if-not-exists
+    privileged: true
+    volumes:
+      - name: node-modules
+        path: /drone/src/${DRONE_REPO_NAME}/node_modules
+      - name: yarn-cache
+        path: /usr/local/share/.cache/yarn
+    commands:
+      - yarn
+  - name: build
+    image: node:10-alpine3.11
+    pull: if-not-exists
+    privileged: true
+    volumes:
+      - name: node-modules
+        path: /drone/src/${DRONE_REPO_NAME}/node_modules
+    commands:
+      - yarn build
+    when:
+      branch: [develop,master]
+  - name: publish-prod
+    image: plugins/docker
+    pull: if-not-exists
+    network_mode: bridge
+    settings:
+      mirror: https://ypusuooh.mirror.aliyuncs.com
+      registry: registry.cn-chengdu.aliyuncs.com
+      repo: registry.cn-chengdu.aliyuncs.com/merry/${DRONE_REPO_NAME}
+      username:
+        from_secret: drone_username
+      password:
+        from_secret: drone_pwd
+      tags:
+        - latest
+    when:
+      branch: master
+  - name: publish-dev
+    image: plugins/docker
+    pull: if-not-exists
+    network_mode: bridge
+    settings:
+      mirror: https://ypusuooh.mirror.aliyuncs.com
+      registry: registry.cn-chengdu.aliyuncs.com
+      repo: registry.cn-chengdu.aliyuncs.com/merry/${DRONE_REPO_NAME}
+      username:
+        from_secret: drone_username
+      password:
+        from_secret: drone_pwd
+      tags:
+        - develop
+    when:
+      branch: develop
+  - name: rancher-prod
+    image: peloton/drone-rancher
+    pull: if-not-exists
+    network_mode: bridge
+    settings:
+      access_key:
+        from_secret: rancher_access_key
+      secret_key:
+        from_secret: rancher_secret_key
+      url: http://rancher.bysir.top:1080/v1
+      service: invitation/${DRONE_REPO_NAME}
+      docker_image: registry.cn-chengdu.aliyuncs.com/merry/${DRONE_REPO_NAME}:latest
+      start_first: true
+      confirm: true
+      timeout: 100
+    when:
+      branch: master
+  - name: rancher-dev
+    image: peloton/drone-rancher
+    pull: if-not-exists
+    network_mode: bridge
+    settings:
+      access_key:
+        from_secret: rancher_access_key
+      secret_key:
+        from_secret: rancher_secret_key
+      url: http://rancher.bysir.top:1080/v1
+      service: invitation/${DRONE_REPO_NAME}
+      docker_image: registry.cn-chengdu.aliyuncs.com/merry/${DRONE_REPO_NAME}:develop
+      start_first: true
+      confirm: true
+      timeout: 100
+    when:
+      branch: develop
+trigger:
+  branch:
+    - master
+    - develop
+volumes:
+  - name: git-cache
+    host:
+      path: /workspace/ci-volumes/git/${DRONE_REPO_NAME}/.gite
+  - name: node-modules
+    host:
+      path: /workspace/ci-volumes/node_modules/${DRONE_REPO_NAME}.${DRONE_BRANCH}
+  - name: yarn-cache
+    host:
+      path: /workspace/ci-volumes/yarn-cache
+  - name: netrc # for `go get go.zhuzi.me/go`
+    host:
+      path: /workspace/ci-volumes/netrc_ext
