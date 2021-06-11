@@ -3,16 +3,13 @@
     <div class="left-sidebar">
       <v-navigation-drawer
           v-model="navSettings.drawer"
-          :color="navSettings.color"
           :mini-variant="navSettings.miniVariant"
           :permanent="navSettings.permanent"
           fixed
-          dark
       >
         <v-list rounded>
           <template v-for="(item,index) in menu">
             <v-list-group
-                color="primary"
                 v-if="item.sub && item.sub.length"
                 :key="index"
                 :prepend-icon="item.icon"
@@ -50,7 +47,7 @@
         </v-list>
       </v-navigation-drawer>
     </div>
-    <div class="main-content flex-grow-0">
+    <div class="main-content">
       <router-view></router-view>
     </div>
   </div>

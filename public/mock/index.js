@@ -1,7 +1,7 @@
 import Mock from 'mockjs'
 
 const mockApi = () => {
-    Mock.mock("/peopleInfo", "get", (config) => {
+    Mock.mock("/peopleInfo?code=100000", "get", (config) => {
         console.log(config);
         return [
             {
@@ -173,6 +173,116 @@ const mockApi = () => {
                 name: '澳门特别行政区',
                 value: 55.23,
                 adCode: '820000'
+            },
+        ];
+    })
+    Mock.mock("/peopleInfo?code=510000", "get", (config) => {
+        console.log(config);
+        return [
+            {
+                name: '成都市',
+                value: 1633.0,
+                adCode: '510100'
+            },
+            {
+                name: '自贡市',
+                value: 292.0,
+                adCode: '510300'
+            },
+            {
+                name: '攀枝花市',
+                value: 123.6,
+                adCode: '510400'
+            },
+            {
+                name: '泸州市',
+                value: 432.4,
+                adCode: '510500'
+            },
+            {
+                name: '德阳市',
+                value: 354.5,
+                adCode: '510600'
+            },
+            {
+                name: '绵阳市',
+                value: 485.7,
+                adCode: '510700'
+            },
+            {
+                name: '广元市',
+                value: 266.7,
+                adCode: '510800'
+            },
+            {
+                name: '遂宁市',
+                value: 320.2,
+                adCode: '510900'
+            },
+            {
+                name: '内江市',
+                value: 369.9,
+                adCode: '511000'
+            },
+            {
+                name: '乐山市',
+                value: 326.7,
+                adCode: '511100'
+            },
+            {
+                name: '南充市',
+                value: 644.0,
+                adCode: '511300'
+            },
+            {
+                name: '眉山市',
+                value: 298.4,
+                adCode: '511400'
+            },
+            {
+                name: '宜宾市',
+                value: 455.6,
+                adCode: '511500'
+            },
+            {
+                name: '广安市',
+                value: 324.1,
+                adCode: '511600'
+            },
+            {
+                name: '达州市',
+                value: 572.0,
+                adCode: '511700'
+            },
+            {
+                name: '雅安市',
+                value: 154.0,
+                adCode: '511800'
+            },
+            {
+                name: '巴中市',
+                value: 332.2,
+                adCode: '511900'
+            },
+            {
+                name: '资阳市',
+                value: 251.2,
+                adCode: '512000'
+            },
+            {
+                name: '阿坝藏族羌族自治州',
+                value: 94.4,
+                adCode: '513200'
+            },
+            {
+                name: '甘孜藏族自治州',
+                value: 119.6,
+                adCode: '513300'
+            },
+            {
+                name: '凉山彝族自治州',
+                value: 490.8,
+                adCode: '513400'
             },
         ];
     })

@@ -20,6 +20,8 @@ const opts = {
             },
             dark: {
                 primary: '#1976D2',
+                secondary: colors.deepPurple.lighten4,
+                accent: colors.indigo.base,
             },
         },
     },

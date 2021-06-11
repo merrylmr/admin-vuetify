@@ -1,5 +1,8 @@
 export function mapOptions(mapType) {
     return {
+        tooltip: {
+            trigger: 'item',
+        },
         grid: {
             height: '85%',
             width: '98%',
@@ -10,7 +13,7 @@ export function mapOptions(mapType) {
             containLabel: true
         },
         visualMap: {
-            min: 55,
+            min: 55, // TODO:数据里面获取
             max: 10550,
             text: ['High', 'Low'],
             realtime: false,
@@ -28,7 +31,8 @@ export function mapOptions(mapType) {
                 // aspectScale: 0.83, // 长宽比
                 zoom: 1.2, // 放大
                 label: {
-                    show: true
+                    show: true,
+                    fontSize: 10,
                 },
                 emphasis: {
                     label: {
@@ -41,6 +45,11 @@ export function mapOptions(mapType) {
                         color: '#fff',
                         borderWidth: 2
                     },
+                },
+                select: {
+                    itemStyle: {
+                        borderColor: '#fff',
+                    }
                 },
                 data: []
             }
