@@ -78,7 +78,7 @@ steps:
       secret_key:
         from_secret: rancher_secret_key
       url: http://rancher.bysir.top:1080/v1
-      service: invitation/${DRONE_REPO_NAME}
+      service: admin-vuetify-v2/${DRONE_REPO_NAME}
       docker_image: registry.cn-chengdu.aliyuncs.com/merry/${DRONE_REPO_NAME}:latest
       start_first: true
       confirm: true
@@ -95,7 +95,7 @@ steps:
       secret_key:
         from_secret: rancher_secret_key
       url: http://rancher.bysir.top:1080/v1
-      service: invitation/${DRONE_REPO_NAME}
+      service: admin-vuetify-v2/${DRONE_REPO_NAME}
       docker_image: registry.cn-chengdu.aliyuncs.com/merry/${DRONE_REPO_NAME}:develop
       start_first: true
       confirm: true
