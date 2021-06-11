@@ -24,6 +24,11 @@ const routes = [
                 path: '/map',
                 component: () => import ('@/views/charts/Map.vue'),
                 name: 'map',
+            },
+            {
+                path: '/tinymce',
+                component: () => import ('@/views/comps/Tinymce.vue'),
+                name: 'tinymce',
             }
         ]
     },

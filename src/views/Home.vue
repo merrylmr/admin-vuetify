@@ -13,7 +13,6 @@
                 v-if="item.sub && item.sub.length"
                 :key="index"
                 :prepend-icon="item.icon"
-                value="true"
             >
               <template v-slot:activator>
                 <v-list-item-title>{{ item.label }}</v-list-item-title>
@@ -90,7 +89,14 @@ export default {
         {
           label: '组件',
           value: 'component',
-          icon: 'mdi-apps'
+          icon: 'mdi-apps',
+          sub: [
+            {
+              label: '富文本',
+              value: 'tinymce',
+              icon: 'mdi-book-edit-outline',
+            }
+          ]
         },
         {
           label: '国际化',
