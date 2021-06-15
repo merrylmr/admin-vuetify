@@ -1,4 +1,4 @@
-# v2
+# admin-vuetify
 
 ## Project setup
 ```

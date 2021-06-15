@@ -1,3 +1,4 @@
+import colors from 'vuetify/lib/util/colors'
 export function mapOptions(mapType) {
     return {
         tooltip: {
@@ -33,7 +34,7 @@ export function mapOptions(mapType) {
             realtime: false,
             calculable: true,
             inRange: {
-                color: ['#D1C4E9', '#673AB7', '#311B92']
+                color: [colors.deepPurple.lighten4, colors.deepPurple.base, colors.deepPurple.darken4]
             },
         },
         series: [

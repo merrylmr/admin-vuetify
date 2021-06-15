@@ -23,7 +23,7 @@ import {mapOptions} from './options.js'
 const nameMap = {
   '100000': '中国人口',
   '510000': '中国-四川人口',
-  'cdCode': '中国-四川-成都人口',
+  '510100': '中国-四川-成都人口',
 }
 export default {
   name: 'map',
