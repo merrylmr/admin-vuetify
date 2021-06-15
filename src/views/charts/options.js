@@ -2,6 +2,20 @@ export function mapOptions(mapType) {
     return {
         tooltip: {
             trigger: 'item',
+            backgroundColor: 'rgba(50,50,50,0.7)',
+            borderColor: '#333',
+            textStyle: {
+                color: '#fff',
+                fontSize: 12
+            },
+            formatter: (item) => {
+                let html = `${item.name}`
+                if (item.data) {
+                    html += `<p style="font-size:12px">人口数量：${(item.data.value)}万</p>
+               `
+                }
+                return html
+            }
         },
         grid: {
             height: '85%',
@@ -13,7 +27,7 @@ export function mapOptions(mapType) {
             containLabel: true
         },
         visualMap: {
-            min: 55, // TODO:数据里面获取
+            min: 55,
             max: 10550,
             text: ['High', 'Low'],
             realtime: false,
@@ -21,7 +35,6 @@ export function mapOptions(mapType) {
             inRange: {
                 color: ['#D1C4E9', '#673AB7', '#311B92']
             },
-            // show: false
         },
         series: [
             {
@@ -48,11 +61,52 @@ export function mapOptions(mapType) {
                 },
                 select: {
                     itemStyle: {
+                        areaColor: '#673AB7',
                         borderColor: '#fff',
-                    }
+                        color: '#fff',
+                        borderWidth: 2
+                    },
+                    label: {
+                        show: true,
+                        color: "#fff",
+                    },
                 },
-                data: []
+                data: [],
+                markPoint: { // 图表标注。
+                    'symbol': 'pin',
+                    'symbolSize': 80, // 图形大小
+                    'label': {
+                        show: true,
+                        position: 'inside',
+                        color: '#333',
+                        fontSize: 10,
+                        formatter: (item) => {
+                            let html = `${item.name.substr(0, 4)}\n${item.name.substr(4)}`
+                            return html
+                        }
+                    },
+                    itemStyle: {
+                        color: '#FAFAFA',
+                        shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        shadowBlur: 10,
+                        shadowOffsetX: 5,
+                        shadowOffsetY: 5,
+                        emphasis: {
+                            label: {
+                                color: '#333',
+                            },
+                        }
+                    },
+                    data: [],
+                    tooltip: {
+                        show: false
+                    }
+                }
             }
         ]
     }
+}
+
+export function cityOptions() {
+
 }

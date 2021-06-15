@@ -17,16 +17,25 @@
 
 <script>
 import axios from 'axios'
-import {peopleInfo} from '@/api/index.js'
+import {peopleInfo, posInfo} from '@/api/index.js'
 import {mapOptions} from './options.js'
 
+const nameMap = {
+  '100000': '中国人口',
+  '510000': '中国-四川人口',
+  'cdCode': '中国-四川-成都人口',
+}
 export default {
   name: 'map',
   data() {
     return {
       myChart: null,
       currentCode: '100000',
-      chinaCode: '100000'
+      chinaCode: '100000',
+      sichuanCode: '510000',
+      cdCode: '510100',
+      // 用来记录当前处于区域层级：1表示全国2：省级别 3.市
+      level: 1
     }
   },
   computed: {
@@ -34,48 +43,59 @@ export default {
       return this.currentCode !== this.chinaCode
     },
     title() {
-      if (this.currentCode === this.chinaCode) {
-        return '中国人口'
-      } else {
-        return '中国-四川人口'
-      }
+      const title = nameMap[this.currentCode];
+      return title || '中国人口'
+    },
+    isCountry() {
+      return this.currentCode === this.chinaCode
     }
   },
   methods: {
     async initMap() {
       const chartDom = document.getElementById('map');
       const myChart = this.$echarts.init(chartDom);
-      myChart.showLoading();
-      const geoJson = await this.getGeoJSONData();
-      this.$echarts.registerMap('ZH', geoJson);
-
-      const dataList = await this.getPeopleInfo(this.chinaCode);
-      const options = this.setOptions(dataList);
-      myChart.setOption(options);
-      myChart.hideLoading();
+      await this.drawMapWithGeoJSON();
+      this.drawMapWithData();
       this.myChart = myChart;
 
       myChart.on('click', (e) => {
-        console.log('myChart e', e, e.data);
-        if (e.data) {
-          // TODO:目前仅支持四川
-          this.currentCode = '510000';
-          this.changeArea(e.data)
+        console.log('myChart e', e.componentType, e.data.adCode);
+        if (e.componentType === 'markPoint') {
+          this.changeArea(e.data);
+          this.level++;
+          this.$router.push({
+            name: 'map',
+            query: {
+              pCode: this.currentCode
+            }
+          })
         }
       })
     },
-    async changeArea(data) {
+    async drawMapWithGeoJSON(code = this.chinaCode) {
       if (this.myChart) {
         this.myChart.clear();
       }
-      console.log('changeArea----1', data);
       this.myChart && this.myChart.showLoading();
-      const geoJson = await this.getGeoJSONData(this.currentCode);
+      const geoJson = await this.getGeoJSONData(code);
       this.$echarts.registerMap('ZH', geoJson);
-      const dataList = await this.getPeopleInfo(this.currentCode);
-      const options = this.setOptions(dataList);
-      this.myChart.setOption(options);
-      this.myChart.hideLoading();
+    },
+    async changeArea(data) {
+      await this.drawMapWithGeoJSON(data.adCode)
+      this.drawMapWithData(data.adCode);
+      // TODO:目前仅支持四川、成都市
+      this.currentCode = data.adCode;
+    },
+    drawMapWithData(code = this.chinaCode) {
+      console.log('drawMapWithData start');
+      Promise.all([this.getPeopleInfo(code), this.getPosInfo(code)]).then(async (res) => {
+        console.log('drawMapWithData res', res);
+        const dataList = res[0]
+        const makerPoints = res[1]
+        const options = this.setOptions(dataList, makerPoints);
+        this.myChart.setOption(options);
+        this.myChart.hideLoading();
+      })
     },
     // 获取geoJson数据
     async getGeoJSONData(code = 100000) {
@@ -97,9 +117,10 @@ export default {
       }
     },
 
-    setOptions(data) {
+    setOptions(data, makerPoints) {
       let options = mapOptions('ZH');
-      let maxValue = 0, minValue = Infinity
+      let maxValue = 0,
+          minValue = Infinity
       data.forEach(item => {
         maxValue = item.value > maxValue ? item.value : maxValue;
         minValue = item.value < minValue ? item.value : minValue;
@@ -112,11 +133,48 @@ export default {
       console.log('max', maxValue, minValue)
       options.visualMap.min = minValue;
       options.visualMap.max = maxValue;
+
+      if (makerPoints && makerPoints.length) {
+        makerPoints.forEach(item => {
+          options.series[0].markPoint.data.push({
+            name: item.name,
+            adCode: item.adCode,
+            coord: [item.longitude, item.latitude]
+          })
+        })
+      }
       return options;
     },
+
+    // 获取城市的经纬度信息
+    async getPosInfo(code) {
+      try {
+        const res = await posInfo({
+          code: code
+        });
+        console.log('res', res);
+        return res || []
+      } catch (err) {
+        console.error(err);
+      }
+    },
     goBack() {
-      this.currentCode = this.chinaCode;
-      this.changeArea()
+      this.level--;
+      const queryCode = this.$route.query.pCode;
+      let adCode = queryCode || this.chinaCode;
+
+      if (this.level === 1) {
+        adCode = this.chinaCode
+        this.$router.push({
+          name: 'map',
+          query: {
+            pCode: ''
+          }
+        })
+      }
+
+      // 市-->省-->全国
+      this.changeArea({adCode: adCode})
     }
   },
   mounted() {

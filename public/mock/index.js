@@ -286,6 +286,131 @@ const mockApi = () => {
             },
         ];
     })
+    Mock.mock("/peopleInfo?code=510100", "get", (config) => {
+        console.log(config);
+        return [
+            {
+                name: '金牛区',
+                value: 121.13,
+                adCode: '510106'
+            },
+            {
+                name: '武侯区',
+                value: 108.38,
+                adCode: '510107'
+            },
+            {
+                name: '简阳市',
+                value: 104.59,
+                adCode: '510185'
+            },
+            {
+                name: '成华区',
+                value: 94.56,
+                adCode: '510108'
+            },
+            {
+                name: '金堂县',
+                value: 89.98,
+                adCode: '510121'
+            },
+            {
+                name: '龙泉驿区',
+                value: 85.95,
+                adCode: '510112'
+            },
+            {
+                name: '新都区',
+                value: 84.86,
+                adCode: '510114'
+            },
+            {
+                name: '青羊区',
+                value: 84.12,
+                adCode: '510105'
+            },
+            {
+                name: '彭州市',
+                value: 77.13,
+                adCode: '510182'
+            },
+            {
+                name: '都江堰市',
+                value: 68.02,
+                adCode: '510181'
+            },
+            {
+                name: '崇州市',
+                value: 67.02,
+                adCode: '510184'
+            },
+            {
+                name: '邛崃市',
+                value: 61.78,
+                adCode: '510183'
+            },
+            {
+                name: '郫都区',
+                value: 57.52,
+                adCode: '510117'
+            },
+            {
+                name: '双流区',
+                value: 56.82,
+                adCode: '510116'
+            },
+            {
+                name: '锦江区',
+                value: 53.75,
+                adCode: '510104'
+            },
+            {
+                name: '大邑县',
+                value: 51.37,
+                adCode: '510129'
+            },
+            {
+                name: '温江区',
+                value: 49.87,
+                adCode: '510115'
+            },
+            {
+                name: '青白江区',
+                value: 39.87,
+                adCode: '510113'
+            },
+            {
+                name: '新津区',
+                value: 31.53,
+                adCode: '510118'
+            },
+            {
+                name: '蒲江县',
+                value: 25.36,
+                adCode: '510131'
+            }
+        ];
+    })
+    Mock.mock("/posInfo?code=100000", "get", () => {
+        return [
+            {
+                adCode: '510000',
+                name: '四川省',
+                longitude: '104.080937',
+                latitude: '30.581026'
+            }
+        ]
+    })
+    Mock.mock("/posInfo?code=510000", "get", () => {
+        return [
+            {
+                adCode: '510100',
+                name: '成都市',
+                longitude: '104.076195',
+                latitude: '30.57974'
+            }
+        ]
+    })
 }
 
 export default mockApi
