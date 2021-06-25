@@ -29,6 +29,11 @@ const routes = [
                 path: '/tinymce',
                 component: () => import ('@/views/comps/Tinymce.vue'),
                 name: 'tinymce',
+            },
+            {
+                path: '/watermark',
+                component: () => import ('@/views/comps/Watermark.vue'),
+                name: 'watermark',
             }
         ]
     },

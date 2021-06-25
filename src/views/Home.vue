@@ -95,6 +95,11 @@ export default {
               label: '富文本',
               value: 'tinymce',
               icon: 'mdi-book-edit-outline',
+            },
+            {
+              label: '水印',
+              value: 'watermark',
+              icon: 'mdi-ab-testing',
             }
           ]
         },
