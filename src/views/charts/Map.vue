@@ -3,6 +3,7 @@
     <div class="ma-4 d-flex justify-space-between">
       <div class="text-h4">{{title}}
         <span class="text-sm-body-2">（单位：万）</span>
+        {{random}}
       </div>
       <v-btn
           v-show="isGoBack"
@@ -35,7 +36,8 @@ export default {
       sichuanCode: '510000',
       cdCode: '510100',
       // 用来记录当前处于区域层级：1表示全国2：省级别 3.市
-      level: 1
+      level: 1,
+      random: Math.random()
     }
   },
   computed: {
@@ -179,6 +181,13 @@ export default {
   },
   mounted() {
     this.initMap();
+  },
+  beforeRouteEnter(to, from, next) {
+    next(() => {
+      if (from.name === 'dashboard') {
+        console.log('lalalla');
+      }
+    })
   }
 }
 </script>

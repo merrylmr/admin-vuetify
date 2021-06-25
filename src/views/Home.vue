@@ -47,7 +47,9 @@
       </v-navigation-drawer>
     </div>
     <div class="main-content">
-      <router-view></router-view>
+      <navigation>
+        <router-view></router-view>
+      </navigation>
     </div>
   </div>
 
