@@ -51,6 +51,11 @@ const routes = [
                 path: '/c',
                 component: () => import ('@/views/keep-alive/C.vue'),
                 name: 'c',
+            },
+            {
+                path: '/noteList',
+                component: () => import ('@/views/note/Index.vue'),
+                name: 'noteList',
             }
         ]
     },

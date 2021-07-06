@@ -108,7 +108,7 @@ export default {
         },
         {
           label: '缓存组件',
-          value: 'component',
+          value: 'keepAlive',
           icon: 'mdi-apps',
           sub: [
             {
@@ -122,6 +122,18 @@ export default {
             //   value: 'a',
             //   icon: 'mdi-book-edit-outline',
             // },
+          ]
+        },
+        {
+          label: '读书笔记',
+          value: 'note',
+          icon: 'mdi-notebook-outline',
+          sub: [
+            {
+              label: '列表',
+              value: 'noteList',
+              icon: 'mdi-format-list-bulleted',
+            }
           ]
         },
         {
