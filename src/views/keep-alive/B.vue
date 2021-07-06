@@ -1,6 +1,6 @@
 <template>
   <div class="ma-4">
-    <v-btn @click="toPage">TO page C</v-btn>
+    <v-btn color="primary" @click="toPage">TO page C</v-btn>
     <v-btn @click="goBack">back</v-btn>
     <div class="text-h4">page B</div>
     <div class="mt-4">{{ random }}</div>
@@ -9,7 +9,7 @@
 
 <script>
 export default {
-  name: 'a',
+  name: 'b',
   data() {
     return {
       random: Math.random()

@@ -4,8 +4,7 @@ import App from './App.vue'
 import vuetify from './plugins/vuetify.js'
 import router from './router/index.js'
 
-import Navigation from 'vue-navigation'
-Vue.use(Navigation, {router})
+
 import './assets/scss/index.scss'
 
 Vue.config.productionTip = false
@@ -13,9 +12,8 @@ import * as echarts from 'echarts';
 
 Vue.prototype.$echarts = echarts;
 
-export const isDef = function (v) {
-    return v !== undefined && v !== null;
-};
+import xKeepAlive from './components/xKeepAlive/index'
+Vue.use(xKeepAlive, { router })
 
 
 import mockApi from '../public/mock/index.js'

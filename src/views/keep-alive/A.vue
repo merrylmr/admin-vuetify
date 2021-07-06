@@ -1,6 +1,6 @@
 <template>
   <div class="ma-4">
-    <v-btn @click="toPage">TO page B</v-btn>
+    <v-btn color="primary" @click="toPage">TO page B</v-btn>
     <div class="text-h4">page A</div>
     <div class="mt-4">{{ random }}</div>
   </div>

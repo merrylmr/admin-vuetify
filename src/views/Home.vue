@@ -47,9 +47,10 @@
       </v-navigation-drawer>
     </div>
     <div class="main-content">
-      <navigation>
-        <router-view></router-view>
-      </navigation>
+      <x-keep-alive>
+        <router-view v-if="$route.meta.keepAlive"></router-view>
+      </x-keep-alive>
+      <router-view v-if="!$route.meta.keepAlive"></router-view>
     </div>
   </div>
 
@@ -103,6 +104,24 @@ export default {
               value: 'watermark',
               icon: 'mdi-ab-testing',
             }
+          ]
+        },
+        {
+          label: '缓存组件',
+          value: 'component',
+          icon: 'mdi-apps',
+          sub: [
+            {
+              label: '首页-列表-详情',
+              value: 'a',
+              icon: 'mdi-book-edit-outline',
+            },
+            //  TODO:
+            // {
+            //   label: '列表-添加/编辑',
+            //   value: 'a',
+            //   icon: 'mdi-book-edit-outline',
+            // },
           ]
         },
         {

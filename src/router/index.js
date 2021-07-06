@@ -39,11 +39,13 @@ const routes = [
                 path: '/a',
                 component: () => import ('@/views/keep-alive/A.vue'),
                 name: 'a',
+                meta: {keepAlive: true, deep: 1}
             },
             {
                 path: '/b',
                 component: () => import ('@/views/keep-alive/B.vue'),
                 name: 'b',
+                meta: {keepAlive: true, deep: 2}
             },
             {
                 path: '/c',
