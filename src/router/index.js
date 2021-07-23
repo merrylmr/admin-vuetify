@@ -26,6 +26,11 @@ const routes = [
                 name: 'map',
             },
             {
+                path: '/circle',
+                component: () => import ('@/views/charts/Circle.vue'),
+                name: 'circle',
+            },
+            {
                 path: '/tinymce',
                 component: () => import ('@/views/comps/Tinymce.vue'),
                 name: 'tinymce',
