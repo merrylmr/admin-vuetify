@@ -1,28 +1,30 @@
 <template>
   <div>
-    <h1>dashboard</h1>
+    <!--    <div class="scroll-top"> {{ scrollTop }}</div>-->
+    <!--    <h1>dashboard</h1>-->
     <div>
-      <div class="left-content">
+      <div class="left-content" id="scrollContainer">
         <div class="section"
              id="section1">1
         </div>
         <div class="section"
-             i
-             d="section2">2
+             id="section2">2
         </div>
         <div class="section"
              id="section3">3
         </div>
-        <div class="space" style="height:1000px"></div>
+        <!--        <div class="space" style="height:1000px"></div>-->
       </div>
       <div class="right-bar">
         <ul>
-          <li class="item"
+          <li class="anchor-item"
               v-for="i in 3"
               :key="i-1"
-              :class="{'is-active':activeIndex===i-1}"
-              @click="stepAction(i-1)">
-            {{ i }}
+              :class="{'is-active':activeIndex===i-1}">
+<!--            {{ i }}-->
+            <a :href="`#section${i}`">
+              {{i}}
+            </a>
           </li>
         </ul>
       </div>
@@ -30,13 +32,16 @@
   </div>
 </template>
 <script>
+import {throttle} from '@/assets/js/utils.js'
+import ScrollAnchor from '@/plugins/scroll-anchor.js'
+
 export default {
   name: 'dashboard',
   data() {
     return {
       list: [],
       offsetTopArr: [],
-      activeIndex: 0
+      activeIndex: 0,
     }
   },
   methods: {
@@ -63,39 +68,25 @@ export default {
     },
     // TODO: 待优化，节流or防抖
     scrollEventInit() {
-      const scrollHandle = () => {
+      const scrollHandle = throttle(() => {
         const scrollTop = document.documentElement.scrollTop;
-
-        // this.activeIndex = index
-        // 高亮的条件：[0,500,1000]
-        // <500  activeIndex:0
-        // >=500 && <1000 activeIndex:1
-        // >=1000 activeIndex:2
-
-        // const diffY = 100
-        // if (scrollTop + diffY < 500) {
-        //   this.activeIndex = 0;
-        // } else if (scrollTop + diffY >= 500 && scrollTop + diffY < 1000) {
-        //   this.activeIndex = 1;
-        // } else {
-        //   this.activeIndex = 2;
-        // }
-
+        // 偏移量（当下一个模块距离顶部“xx px”时候，高亮）
+        const diffY = 100;
         const index = this.offsetTopArr.findIndex((item => {
-          return item > scrollTop
+          return item > scrollTop + diffY
         }))
-
-        console.log('index', index);
+        // lastOne
         // scrollTop超出区域
         if (index === -1) {
-          this.activeIndex = this.offsetTopArr.length - 1;
-        } else if (index >= 1) {
-          // TODO: 这里可以适当的增加偏移量
-          const diffY = 100
-          const prevOffsetTop = this.offsetTopArr[index - 1];
-          const curH = this.offsetTopArr[index] - this.offsetTopArr[index - 1];
+          const len = this.offsetTopArr.length - 1;
+          const h = this.list[len].clientHeight;
+          if (scrollTop <= this.offsetTopArr[len] + h) {
+            this.activeIndex = len;
+          } else {
+            this.activeIndex = -1;
+          }
 
-          console.log('prevOffsetTop + diffY ', prevOffsetTop + diffY, 'scrollTop:', scrollTop, 'curH:', curH)
+        } else if (index >= 1) {
           this.activeIndex = index - 1
         } else {
           // 第一个
@@ -105,16 +96,21 @@ export default {
 
         console.log('this.offsetTopArr', this.offsetTopArr);
         console.log('scroll---1111', document.documentElement.scrollTop)
-      }
+      }, 200)
       window.addEventListener('scroll', scrollHandle)
     }
   },
   mounted() {
     this.$nextTick(() => {
-      this.getSectionList()
-      this.getOffsetTopArr();
+      // this.getSectionList()
+      // this.getOffsetTopArr();
+      new ScrollAnchor({
+        section: 'section',
+        anchor: 'anchor-item',
+        // scrollDom: document.getElementById('scrollContainer')
+      })
     })
-    this.scrollEventInit()
+    // this.scrollEventInit()
   }
 }
 </script>
@@ -128,7 +124,7 @@ export default {
   display: flex;
   align-items: center;
 
-  .item {
+  .anchor-item {
     padding: 10px 0;
     cursor: pointer;
 
@@ -149,5 +145,18 @@ export default {
   &:nth-child(2) {
     height: 2000px;
   }
+}
+
+.scroll-top {
+  position: fixed;
+  width: 100%;
+  top: 10px;
+  font-size: 24px;
+}
+
+.left-content {
+  //height: 500px;
+  //overflow: scroll;
+
 }
 </style>
