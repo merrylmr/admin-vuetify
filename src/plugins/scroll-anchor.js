@@ -10,7 +10,6 @@ export default class ScrollAnchor {
     constructor(options) {
         this.offsetTopArr = []
         this.options = Object.assign(defaultOptions, options);
-        console.log('this.options', this.options);
         this.init()
     }
 
@@ -21,8 +20,19 @@ export default class ScrollAnchor {
             return dom.scrollTop;
         }
     }
-    getDomOffsetTop() {
 
+    getDomOffsetTop(dom, parent) {
+        try {
+            let top = dom.offsetTop;
+            while (dom.offsetParent != null || parent && dom.offsetParent !== parent) {
+                dom = dom.offsetParent
+                top += dom.offsetTop
+            }
+            return top
+        } catch (err) {
+            console.error('getDomOffsetTop error：', err)
+            return 0
+        }
     }
 
     getDom(v, k) {
@@ -75,6 +85,7 @@ export default class ScrollAnchor {
     scrollEvent() {
         const options = this.options;
         const diffY = options.paddingTop;
+
         const scrollHandle = throttle(() => {
             const dom = this.scrollDom;
             const scrollTop = this.getScrollTop(dom);
@@ -107,7 +118,6 @@ export default class ScrollAnchor {
                 }
             }
 
-            // 其他的dom需要去掉
             this.anchorList.forEach((item, index) => {
                 if (this.activeIndex === index) {
                     item.classList.add('is-active')
@@ -132,9 +142,8 @@ export default class ScrollAnchor {
 
             // 获取每个板块的offsetTop
             this.sectionList.forEach(item => {
-                this.offsetTopArr.push(item.offsetTop)
+                this.offsetTopArr.push(this.getDomOffsetTop(item))
             })
-
             this.anchorEvent();
             this.scrollEvent();
 
