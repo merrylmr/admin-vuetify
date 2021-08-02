@@ -12,11 +12,21 @@ export default {
   components: {},
   data() {
     return {
-      list: {
-        btc: [],
-        ETH: []
-      }
+      timerId: null,
     }
+  },
+  methods: {
+    interValNotify() {
+      if (this.timerId) {
+        clearInterval(this.timerId)
+      }
+      this.timerId = setInterval(() => {
+        window.alert('该上厕所啦！');
+      }, 1000 * 60 * 30)
+    }
+  },
+  mounted() {
+    // this.interValNotify()
   }
 }
 </script>

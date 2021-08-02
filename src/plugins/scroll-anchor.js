@@ -1,15 +1,16 @@
 import {throttle} from '../assets/js/utils.js'
-// TODO:try catch
-// 浏览器兼容(window.scrollTo)
-//
 
-const isSupportBehavior = typeof window.getComputedStyle(document.body).scrollBehavior !== 'undefined'
 const domScrollTop = document.documentElement.scrollTop || window.pageYOffset || document.body.scrollTop;
-
+const defaultOptions = {
+    per: 5,
+    paddingTop: 50,
+    lastActive: false
+}
 export default class ScrollAnchor {
     constructor(options) {
         this.offsetTopArr = []
-        this.options = options;
+        this.options = Object.assign(defaultOptions, options);
+        console.log('this.options', this.options);
         this.init()
     }
 
@@ -20,8 +21,6 @@ export default class ScrollAnchor {
             return dom.scrollTop;
         }
     }
-
-
     getDomOffsetTop() {
 
     }
@@ -34,69 +33,57 @@ export default class ScrollAnchor {
         }
     }
 
-
-    scrollSmoothTo(position) {
+    /**
+     * 平滑滚动
+     * @param endPos：滚动到的位置
+     */
+    scrollSmoothTo(endPos) {
         const scrollTopDom = this.options.scrollDom || document.documentElement;
-        const scrollToDom = this.options.scrollDom || window;
-        if (isSupportBehavior) {
-            console.log('not ie bro', scrollToDom)
-            scrollToDom.scrollTo({
-                top: position,
-                behavior: "smooth"
-            })
+        let scrollTop = this.getScrollTop(scrollTopDom)
+        let startTime = Date.now(); // 开始时间
+        const duringTime = 1000;
 
-        } else {
-            if (!window.requestAnimFrame) {
-                window.requestAnimationFrame = function (callback) {
-                    return setTimeout(callback, 17);
-                };
+        const step = (startPos, endPos) => {
+            const leftTime = (startTime + duringTime) - Date.now();
+            const percent = (1 - leftTime / duringTime);
+
+            let nowPos = (endPos - startPos) * percent + startPos
+
+            if (percent >= 1) {
+                scrollTopDom.scrollTop = endPos;
+                nowPos = endPos;
+            } else {
+                window.requestAnimationFrame(function () {
+                    scrollTopDom.scrollTop = nowPos;
+                    step(nowPos, endPos);
+                });
             }
-            let scrollTop = this.getScrollTop(scrollTopDom)
-            // 滚动step方法
-            const step = function () {
-                // 距离目标滚动距离
-                const distance = position - scrollTop;
-                // 目标滚动位置
-                scrollTop = scrollTop + distance / 5;
-                if (Math.abs(distance) < 1) {
-                    scrollTopDom.scrollTop = position
-                    // isSupportBehavior ? scrollToDom.scrollTo(0, position) : (scrollTopDom.scrollTop = position)
-                } else {
-                    scrollTopDom.scrollTop = scrollTop
-                    // isSupportBehavior ? scrollToDom.scrollTo(0, scrollTop) : (scrollTopDom.scrollTop = scrollTop)
-                    requestAnimationFrame(step);
-                }
-            };
-            step()
         }
+        step(scrollTop, endPos)
     }
 
     anchorEvent() {
         this.anchorList.forEach((anchor, index) => {
             anchor.addEventListener('click', (e) => {
                 const offsetTop = this.offsetTopArr[index];
-                // TODO: 这里如果是锚点的话，scrollTo不会生效
-                e.preventDefault()
-                this.scrollSmoothTo(offsetTop)
-                //  添加锚点
+                const isLink = e.target.tagName.toLocaleLowerCase() === 'a';
+                this.scrollSmoothTo(offsetTop, isLink)
             })
         })
     }
 
     scrollEvent() {
         const options = this.options;
-        const diffY = 100;
+        const diffY = options.paddingTop;
         const scrollHandle = throttle(() => {
-            const dom = options.scrollDom ? options.scrollDom : document.documentElement;
-
+            const dom = this.scrollDom;
             const scrollTop = this.getScrollTop(dom);
             const index = this.offsetTopArr.findIndex((item => {
                 return item > scrollTop + diffY
             }))
+            const len = this.offsetTopArr.length - 1;
+            const h = this.sectionList[len].clientHeight;
             if (index === -1) {
-                const len = this.offsetTopArr.length - 1;
-                const h = this.sectionList[len].clientHeight;
-
                 if (scrollTop <= this.offsetTopArr[len] + h) {
                     this.activeIndex = len;
                 } else {
@@ -110,6 +97,16 @@ export default class ScrollAnchor {
                 this.activeIndex = index;
             }
 
+            if (this.options.lastActive) {
+                // 滚动到接近底部、则最后一个高亮（范围值）
+                const docOffsetH = this.scrollDom.offsetHeight;
+                const docClientH = this.scrollDom.clientHeight
+                const bottomHeight = docOffsetH - docClientH
+                if (scrollTop + 10 >= bottomHeight) {
+                    this.activeIndex = len;
+                }
+            }
+
             // 其他的dom需要去掉
             this.anchorList.forEach((item, index) => {
                 if (this.activeIndex === index) {
@@ -118,7 +115,6 @@ export default class ScrollAnchor {
                     item.classList.remove('is-active')
                 }
             })
-
         }, 200)
         const parentDom = options.scrollDom || window
         parentDom.addEventListener('scroll', scrollHandle)
@@ -127,9 +123,14 @@ export default class ScrollAnchor {
     init() {
         try {
             const options = this.options;
-            this.anchorList = this.getDom(options.anchor)
-            this.sectionList = this.getDom(options.section);
+            this.anchorList = this.getDom(options.anchor, 'anchor')
+            this.sectionList = this.getDom(options.section, 'section');
+            // 用于监听滚动事件
+            this.scrollContainer = this.getDom(options.scrollContainer || window)
+            // 用于获取父级的scrollTop
+            this.scrollDom = this.getDom(options.scrollContainer || document.documentElement)
 
+            // 获取每个板块的offsetTop
             this.sectionList.forEach(item => {
                 this.offsetTopArr.push(item.offsetTop)
             })

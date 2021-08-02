@@ -21,10 +21,8 @@
               v-for="i in 3"
               :key="i-1"
               :class="{'is-active':activeIndex===i-1}">
-<!--            {{ i }}-->
-            <a :href="`#section${i}`">
-              {{i}}
-            </a>
+            {{ i }}
+<!--              <a :href="`#section${i}`">{{ i }}</a>-->
           </li>
         </ul>
       </div>
@@ -107,6 +105,11 @@ export default {
       new ScrollAnchor({
         section: 'section',
         anchor: 'anchor-item',
+        per: 5,
+        paddingTop: 50,
+        lastActive: true,
+        speed: 3000,
+        // scrollContainer:
         // scrollDom: document.getElementById('scrollContainer')
       })
     })
