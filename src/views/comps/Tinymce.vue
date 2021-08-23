@@ -1,6 +1,10 @@
 <template>
   <div>
-    <editor v-model="value" :init="init"></editor>
+    <editor
+        :apiKey="apiKey"
+        v-model="value"
+        :init="init">
+    </editor>
   </div>
 </template>
 
@@ -31,9 +35,10 @@ export default {
           'advlist autolink lists link image charmap print preview anchor',
           'searchreplace visualblocks code fullscreen',
           'insertdatetime media table paste code help wordcount',
-            'codesample'
+          'codesample'
         ],
-      }
+      },
+      apiKey: 'rq5hnuaw3e0r630ni2mz48jgp6ra08cgc07hu8sxdmbwux0i'
     }
   },
   components: {Editor},
