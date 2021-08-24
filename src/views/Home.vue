@@ -107,6 +107,18 @@ export default {
           ]
         },
         {
+          label: '插件',
+          value: 'component',
+          icon: 'mdi-apps',
+          sub: [
+            {
+              label: 'AnchorScroll',
+              value: 'anchorScroll',
+              icon: 'mdi-book-edit-outline',
+            },
+          ]
+        },
+        {
           label: '缓存组件',
           value: 'keepAlive',
           icon: 'mdi-apps',

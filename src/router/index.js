@@ -41,6 +41,11 @@ const routes = [
                 name: 'watermark',
             },
             {
+                path: '/AnchorScroll',
+                component: () => import ('@/views/plugin/AnchorScroll.vue'),
+                name: 'watermark',
+            },
+            {
                 path: '/a',
                 component: () => import ('@/views/keep-alive/A.vue'),
                 name: 'a',

@@ -87,6 +87,7 @@ export default class ScrollAnchor {
         const diffY = options.paddingTop;
 
         const scrollHandle = throttle(() => {
+            console.log('scrollHandle')
             const dom = this.scrollDom;
             const scrollTop = this.getScrollTop(dom);
             const index = this.offsetTopArr.findIndex((item => {
@@ -128,6 +129,11 @@ export default class ScrollAnchor {
         }, 200)
         const parentDom = options.scrollDom || window
         parentDom.addEventListener('scroll', scrollHandle)
+    }
+
+    // 单页面,切换页面需要去remove事件
+    removeEvent() {
+
     }
 
     init() {
