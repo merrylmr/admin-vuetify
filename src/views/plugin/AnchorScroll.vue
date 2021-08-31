@@ -1,10 +1,8 @@
 
 <template>
   <div>
-    <!--    <div class="scroll-top"> {{ scrollTop }}</div>-->
-    <!--    <h1>dashboard</h1>-->
     <div>
-      <div class="left-content" id="scrollContainer">
+      <div class="left-content scrollContainer" id="scrollContainer">
         <div class="section"
              id="section1">1
         </div>
@@ -27,6 +25,13 @@
         </ul>
       </div>
     </div>
+    <div class="more-plugin">
+      更多相关滚动插件 activeIndex:{{ instance.activeIndex }}
+      <a
+          target="_blank"
+          :href="href">better-scroll
+      </a>
+    </div>
   </div>
 </template>
 <script>
@@ -40,21 +45,29 @@ export default {
       list: [],
       offsetTopArr: [],
       activeIndex: 0,
+      href: 'https://github.com/ustbhuangyi/better-scroll/blob/master/packages/better-scroll/README_zh-CN.md',
+      instance: {
+        activeIndex: 0
+      }
     }
   },
   methods: {
   },
   mounted() {
     this.$nextTick(() => {
-      new ScrollAnchor({
+      const instance = new ScrollAnchor({
         section: 'section',
         anchor: 'anchor-item',
         per: 5,
         paddingTop: 50,
         lastActive: true,
         speed: 3000,
-        // scrollContainer:
+        scrollContainer: 'scrollContainer'
         // scrollDom: document.getElementById('scrollContainer')
+      })
+      this.instance = instance;
+      this.$once('hook:beforeDestroy', () => {
+        instance.$emit('removeEvent')
       })
     })
   }
@@ -63,10 +76,10 @@ export default {
 <style scoped lang="scss">
 .right-bar {
   position: fixed;
-  right: 0;
+  right: 30px;
   top: 0;
   height: 100vh;
-  width: 300px;
+  width: 100px;
   display: flex;
   align-items: center;
 
@@ -101,8 +114,16 @@ export default {
 }
 
 .left-content {
-  //height: 500px;
-  //overflow: scroll;
+  height: 500px;
+  overflow-y: auto;
+}
 
+
+</style>
+
+<style lang="scss">
+html,
+body {
+  overflow: hidden;
 }
 </style>

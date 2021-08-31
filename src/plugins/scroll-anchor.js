@@ -8,9 +8,27 @@ const defaultOptions = {
 }
 export default class ScrollAnchor {
     constructor(options) {
+        this.activeIndex = 0;
         this.offsetTopArr = []
         this.options = Object.assign(defaultOptions, options);
-        this.init()
+        this.$event = {}
+        this.init();
+    }
+
+    $emit(key) {
+        const fns = this.$event[key];
+        if (fns && fns.length) {
+            fns.forEach(fn => {
+                fn.apply(this)
+            })
+        }
+    }
+
+    $on(key, fn) {
+        if (!this.$event[key]) {
+            this.$event[key] = []
+        }
+        this.$event[key].push(fn);
     }
 
     getScrollTop(dom) {
@@ -21,10 +39,10 @@ export default class ScrollAnchor {
         }
     }
 
-    getDomOffsetTop(dom, parent) {
+    getDomOffsetTop(dom) {
         try {
             let top = dom.offsetTop;
-            while (dom.offsetParent != null || parent && dom.offsetParent !== parent) {
+            while (dom.offsetParent != null) {
                 dom = dom.offsetParent
                 top += dom.offsetTop
             }
@@ -37,6 +55,14 @@ export default class ScrollAnchor {
 
     getDom(v, k) {
         if (v) {
+            return typeof v === 'string' ? document.querySelector('.' + v) : v
+        } else {
+            throw (k + '不能为空')
+        }
+    }
+
+    getDomAll(v, k) {
+        if (v) {
             return typeof v === 'string' ? document.querySelectorAll('.' + v) : v
         } else {
             throw (k + '不能为空')
@@ -48,7 +74,7 @@ export default class ScrollAnchor {
      * @param endPos：滚动到的位置
      */
     scrollSmoothTo(endPos) {
-        const scrollTopDom = this.options.scrollDom || document.documentElement;
+        const scrollTopDom = this.scrollDom
         let scrollTop = this.getScrollTop(scrollTopDom)
         let startTime = Date.now(); // 开始时间
         const duringTime = 1000;
@@ -88,8 +114,7 @@ export default class ScrollAnchor {
 
         const scrollHandle = throttle(() => {
             console.log('scrollHandle')
-            const dom = this.scrollDom;
-            const scrollTop = this.getScrollTop(dom);
+            const scrollTop = this.getScrollTop(this.scrollDom);
             const index = this.offsetTopArr.findIndex((item => {
                 return item > scrollTop + diffY
             }))
@@ -111,7 +136,7 @@ export default class ScrollAnchor {
 
             if (this.options.lastActive) {
                 // 滚动到接近底部、则最后一个高亮（范围值）
-                const docOffsetH = this.scrollDom.offsetHeight;
+                const docOffsetH = this.scrollDom.scrollHeight;
                 const docClientH = this.scrollDom.clientHeight
                 const bottomHeight = docOffsetH - docClientH
                 if (scrollTop + 10 >= bottomHeight) {
@@ -127,28 +152,25 @@ export default class ScrollAnchor {
                 }
             })
         }, 200)
-        const parentDom = options.scrollDom || window
+        const parentDom = this.scrollContainer
         parentDom.addEventListener('scroll', scrollHandle)
+
+        this.$on('removeEvent', () => {
+            parentDom.removeEventListener('scroll', scrollHandle)
+        })
     }
-
-    // 单页面,切换页面需要去remove事件
-    removeEvent() {
-
-    }
-
     init() {
         try {
             const options = this.options;
-            this.anchorList = this.getDom(options.anchor, 'anchor')
-            this.sectionList = this.getDom(options.section, 'section');
+            this.anchorList = this.getDomAll(options.anchor, 'anchor')
+            this.sectionList = this.getDomAll(options.section, 'section');
             // 用于监听滚动事件
             this.scrollContainer = this.getDom(options.scrollContainer || window)
             // 用于获取父级的scrollTop
             this.scrollDom = this.getDom(options.scrollContainer || document.documentElement)
-
             // 获取每个板块的offsetTop
             this.sectionList.forEach(item => {
-                this.offsetTopArr.push(this.getDomOffsetTop(item))
+                this.offsetTopArr.push(this.getDomOffsetTop(item, this.scrollDom))
             })
             this.anchorEvent();
             this.scrollEvent();
