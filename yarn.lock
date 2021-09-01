@@ -7413,6 +7413,11 @@ schema-utils@^3.0.0:
     ajv "^6.12.5"
     ajv-keywords "^3.5.2"
 
+scroll-anchor@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/scroll-anchor/-/scroll-anchor-1.0.3.tgz#e6fec1254c9e5395f316a929d2430cba2bde0e5a"
+  integrity sha512-8wPGqLzu2f31CyL5XWJ/1odK7jJk2KdunDpkqN7ekvZ6WDLK2969dsEBGKHZ1XeA0FFgkBqgYuW9eClOW/kZtA==
+
 scss-tokenizer@^0.2.3:
   version "0.2.3"
   resolved "https://registry.yarnpkg.com/scss-tokenizer/-/scss-tokenizer-0.2.3.tgz#8eb06db9a9723333824d3f5530641149847ce5d1"

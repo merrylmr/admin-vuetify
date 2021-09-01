@@ -1,8 +1,45 @@
 
 <template>
   <div>
+    <div class="options">
+      <div>
+        <v-row>
+          <v-col cols="4">
+            <v-select
+                v-model="options.scrollContainer"
+                :items="items"
+                item-text="label"
+                item-value="value"
+                label="滚动容器"
+                required
+            ></v-select>
+          </v-col>
+          <v-col cols="4"
+                 class="d-flex align-center">
+            <v-slider
+                style="margin-top:25px"
+                label="过渡时间"
+                :max="10000"
+                :min="0"
+                :step="100"
+                :dense="true"
+                v-model="options.duration"
+                thumb-label="always"
+            ></v-slider>
+          </v-col>
+          <v-col cols="4">
+            <v-checkbox
+                v-model="options.lastActive"
+                label="最后一个高亮"
+            ></v-checkbox>
+          </v-col>
+        </v-row>
+      </div>
+    </div>
     <div>
-      <div class="left-content scrollContainer" id="scrollContainer">
+      <div class="left-content scrollContainer"
+           :style="scrollStyle"
+           id="scrollContainer">
         <div class="section"
              id="section1">1
         </div>
@@ -36,7 +73,7 @@
 </template>
 <script>
 
-import ScrollAnchor from '@/plugins/scroll-anchor.js'
+import ScrollAnchor from 'scroll-anchor'
 
 export default {
   name: 'dashboard',
@@ -48,28 +85,63 @@ export default {
       href: 'https://github.com/ustbhuangyi/better-scroll/blob/master/packages/better-scroll/README_zh-CN.md',
       instance: {
         activeIndex: 0
+      },
+      options: {
+        section: 'section',
+        anchor: 'anchor-item',
+        paddingTop: 50,
+        lastActive: true,
+        duration: 1000,
+        scrollContainer: 'scrollContainer'
+      },
+      items: [
+        {
+          label: '默认',
+          value: ''
+        }, {
+          label: 'scrollContainer',
+          value: 'scrollContainer'
+        }
+      ]
+    }
+  },
+  computed: {
+    scrollStyle() {
+      if (this.options.scrollContainer === 'scrollContainer') {
+        return {
+          'height': '500px',
+          'overflow-y': 'auto'
+        }
+      } else {
+        return {}
       }
     }
   },
   methods: {
+    init() {
+      const instance = new ScrollAnchor(this.options)
+      this.instance = instance;
+    }
   },
   mounted() {
     this.$nextTick(() => {
-      const instance = new ScrollAnchor({
-        section: 'section',
-        anchor: 'anchor-item',
-        per: 5,
-        paddingTop: 50,
-        lastActive: true,
-        speed: 3000,
-        scrollContainer: 'scrollContainer'
-        // scrollDom: document.getElementById('scrollContainer')
-      })
-      this.instance = instance;
-      this.$once('hook:beforeDestroy', () => {
-        instance.$emit('removeEvent')
-      })
+      this.init();
     })
+  },
+  beforeDestroy() {
+    this.instance.$emit('removeEvent')
+  },
+  watch: {
+    'options': {
+      handler() {
+        console.log('this.options', this.options)
+        if (this.instance) {
+          this.instance.$emit('removeEvent')
+        }
+        this.init();
+      },
+      deep: true
+    }
   }
 }
 </script>
@@ -113,17 +185,17 @@ export default {
   font-size: 24px;
 }
 
-.left-content {
-  height: 500px;
-  overflow-y: auto;
+.options {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 80%
 }
-
-
 </style>
 
 <style lang="scss">
-html,
-body {
-  overflow: hidden;
-}
+//html,
+//body {
+//  overflow: hidden;
+//}
 </style>
