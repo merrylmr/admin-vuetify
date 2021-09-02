@@ -36,6 +36,11 @@ const routes = [
                 name: 'tinymce',
             },
             {
+                path: '/crop',
+                component: () => import ('@/views/comps/Crop.vue'),
+                name: 'crop',
+            },
+            {
                 path: '/watermark',
                 component: () => import ('@/views/comps/Watermark.vue'),
                 name: 'watermark',

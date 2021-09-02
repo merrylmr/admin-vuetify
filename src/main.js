@@ -11,6 +11,8 @@ Vue.config.productionTip = false
 import * as echarts from 'echarts';
 
 Vue.prototype.$echarts = echarts;
+import lodash from 'lodash'
+Vue.prototype._=lodash
 
 import xKeepAlive from './components/xKeepAlive/index'
 Vue.use(xKeepAlive, { router })

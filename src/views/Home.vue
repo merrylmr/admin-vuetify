@@ -100,6 +100,11 @@ export default {
               icon: 'mdi-book-edit-outline',
             },
             {
+              label: '图片裁剪',
+              value: 'crop',
+              icon: 'mdi-ab-testing',
+            },
+            {
               label: '水印',
               value: 'watermark',
               icon: 'mdi-ab-testing',
