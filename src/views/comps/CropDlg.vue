@@ -698,4 +698,9 @@ export default {
   width: 100%;
   text-align: center;
 }
+
+img {
+  user-drag: none;
+  -webkit-user-drag: none;
+}
 </style>
