@@ -52,6 +52,7 @@ export default {
       if (url) {
         return {
           '-webkit-mask-box-image-source': `url(${url})`,
+          'mask-box-image-source': `url(${url})`,
           ' -webkit-mask-box-image-slice': 'initial',
           '-webkit-mask-box-image-width': 'initial',
           '-webkit-mask-box-image-outset': 'initial',

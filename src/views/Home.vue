@@ -108,6 +108,11 @@ export default {
               label: '水印',
               value: 'watermark',
               icon: 'mdi-ab-testing',
+            },
+            {
+              label: '手机端日历',
+              value: 'calendar',
+              icon: 'mdi-ab-testing',
             }
           ]
         },

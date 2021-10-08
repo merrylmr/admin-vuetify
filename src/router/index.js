@@ -41,6 +41,16 @@ const routes = [
                 name: 'crop',
             },
             {
+                path: '/swiper',
+                component: () => import ('@/views/comps/Swiper.vue'),
+                name: 'swiper',
+            },
+            {
+                path: '/dnd',
+                component: () => import ('@/views/comps/Dnd.vue'),
+                name: 'dnd',
+            },
+            {
                 path: '/watermark',
                 component: () => import ('@/views/comps/Watermark.vue'),
                 name: 'watermark',
@@ -74,6 +84,11 @@ const routes = [
             }
         ]
     },
+    {
+        path: '/calendar',
+        component: () => import ('@/views/comps/calendar/Index.vue'),
+        name: 'calendar',
+    }
 ]
 
 const router = new VueRouter({
