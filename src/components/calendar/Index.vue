@@ -1,25 +1,25 @@
 <template>
-    <div class="ignore calendar-box">
-        <div class="calendar-today">
+  <div class="calendar-box">
+    <div class="calendar-today">
             <span class="arrow" @click="prevHandle">
-                <van-icon name="arrow-left"/>
+              <img src="./assets/arrow-left.svg" alt="">
             </span>
-            <span>{{ formatTime }}</span>
-            <span @click="nextHandle" class="arrow">
-                <van-icon name="arrow"/>
+      <span>{{ formatTime }}</span>
+      <span @click="nextHandle" class="arrow next">
+              <img src="./assets/arrow-left.svg" alt="">
             </span>
-        </div>
-        <ul class="calendar-head">
-            <li v-for="(item,index) in weekList"
-                :key="index">{{ item.text }}
-            </li>
-        </ul>
-        <calendarContent
-            :style="{height:calenderInnerH+'px'}"
-            ref="calendar_swiper"
-            :checkDate="current_day"
-            :mode="mode"
-            :calenderInnerH="calenderInnerH"
+    </div>
+    <ul class="calendar-head">
+      <li v-for="(item,index) in weekList"
+          :key="index">{{ item.text }}
+      </li>
+    </ul>
+    <calendarContent
+        :style="{height:calenderInnerH+'px'}"
+        ref="calendar_swiper"
+        :checkDate="current_day"
+        :mode="curMode"
+        :calenderInnerH="calenderInnerH"
             :changeMode="changeMode"
             @on-change="changeIndex"
             @calendarHeight="calendarHeight"
@@ -54,7 +54,10 @@
     </div>
 </template>
 <script>
-// 1.切换动画优化 2. 日历配置项 3.样式  4. 代码优化
+// 1.切换动画优化
+// 2.日历配置项 :支持中英文，顶部日期格式，插槽，
+// 3.样式：支持跟换主题色等、样式优化
+// 4.代码优化
 import calendarContent from './swiper-monthorweek.vue'
 import format from './format.js'
 import {weekList} from './config.js'
@@ -62,19 +65,20 @@ import {weekList} from './config.js'
 import {MIN_HEIGHT, MAX_HEIGHT} from './const.js'
 
 export default {
-    name: 'v-calender',
-    data() {
-        return {
-            weekList,
-            disp_date: new Date(),
-            today: new Date(),
-            current_day: new Date(),
-            monthList: [],
-            checkedDay: '0000-00-00',
-            can_click: true,
-            calHeight: '',  // 日历外框高度，自适应要用到
-            calenderInnerH: this.mode === 'week' ? MIN_HEIGHT : MAX_HEIGHT
-        }
+  name: 'v-calender',
+  data() {
+    return {
+      weekList,
+      disp_date: new Date(),
+      today: new Date(),
+      current_day: new Date(),
+      monthList: [],
+      checkedDay: '0000-00-00',
+      can_click: true,
+      calHeight: '',  // 日历外框高度，自适应要用到
+      calenderInnerH: this.mode === 'week' ? MIN_HEIGHT : MAX_HEIGHT,
+      curMode: 'week'
+    }
     },
     props: {
         changeMode: {
@@ -100,17 +104,18 @@ export default {
         }
     },
     created() {
-        this.todayDate();
-        if (this.mode === 'month') {
-            this.get3month()
-        } else {
-            this.get3week()
-        }
+      this.curMode = this.mode;
+      this.todayDate();
+      if (this.curMode === 'month') {
+        this.get3month()
+      } else {
+        this.get3week()
+      }
     },
     methods: {
         toggleModeHandle() {
             console.log('toggleModeHandle-----')
-            const mode = this.mode === 'week' ? 'month' : 'week'
+          const mode = this.curMode === 'week' ? 'month' : 'week'
             this.$emit('setMode', mode)
             this.calenderInnerH = mode === 'week' ? MIN_HEIGHT : MAX_HEIGHT
             if (mode === 'month') {
@@ -128,37 +133,38 @@ export default {
             console.log('---val---' + newVal);
         },
         changeModeHandle(mode) {
-            console.log('changeModeHandle mode', mode)
-            if (mode === this.mode) {
-                return
-            }
-            this.$emit('setMode', mode)
-            if (mode === 'week') {
-                this.get3week();
-            } else {
-                this.get3month()
-            }
+          console.log('changeModeHandle mode', mode)
+          if (mode === this.curMode) {
+            return
+          }
+          this.curMode = mode;
+          if (mode === 'week') {
+            this.get3week();
+          } else {
+            this.get3month()
+          }
         },
         todayDate() {
             this.checkedDay = this.formatDateTime(this.today);
         },
         chooseDay(year, month, day, otherMonth, mode) {
-            // 为了PC端点击事件和移动冲突
-            if (!this.can_click) return
-            this.current_day = new Date(year, month, day)
-            this.checkedDay = this.format(year, month, day)
-            if (otherMonth && mode === 'month') {
-                let _tmpdt = new Date(this.disp_date.getFullYear(), this.disp_date.getMonth() - otherMonth, 0)
-                let maxday = _tmpdt.getDate()
-                let _day = maxday < day ? maxday : day
-                this.disp_date = new Date(year, month - otherMonth, _day)
-                this.changeIndex(otherMonth, false, true)
-            } else if (otherMonth && mode === 'week') {
-                this.disp_date = this.current_day
-            } else {
-                this.disp_date = this.current_day
-            }
-            this.$emit('change', this.disp_date)
+          // 为了PC端点击事件和移动冲突
+          if (!this.can_click) return
+          if (!this.can_click) return
+          this.current_day = new Date(year, month, day)
+          this.checkedDay = this.format(year, month, day)
+          if (otherMonth && mode === 'month') {
+            let _tmpdt = new Date(this.disp_date.getFullYear(), this.disp_date.getMonth() - otherMonth, 0)
+            let maxday = _tmpdt.getDate()
+            let _day = maxday < day ? maxday : day
+            this.disp_date = new Date(year, month - otherMonth, _day)
+            this.changeIndex(otherMonth, false, true)
+          } else if (otherMonth && mode === 'week') {
+            this.disp_date = this.current_day
+          } else {
+            this.disp_date = this.current_day
+          }
+          this.$emit('change', this.disp_date)
         },
         formatDateTime(date) {
             let y = date.getFullYear();
@@ -287,26 +293,26 @@ export default {
         },
         changeIndex(index, is_week, is_click = false) {
             if (index) {
-                if (this.mode === 'week') {
-                    this.disp_date = new Date(this.disp_date.getFullYear(), this.disp_date.getMonth(), this.disp_date.getDate() + (7 * (index)))
-                    this.checkedDay = this.format(this.disp_date.getFullYear(), this.disp_date.getMonth(), this.disp_date.getDate())
-                    this.current_day = this.disp_date
-                    this.get3week()
-                } else {
-                    let _tmpdt = new Date(this.disp_date.getFullYear(), this.disp_date.getMonth() + index, 0)
-                    let maxday = _tmpdt.getDate()
-                    let _day = maxday < this.disp_date.getDate() ? maxday : this.disp_date.getDate()
-                    console.log(_day)
+              if (this.curMode === 'week') {
+                this.disp_date = new Date(this.disp_date.getFullYear(), this.disp_date.getMonth(), this.disp_date.getDate() + (7 * (index)))
+                this.checkedDay = this.format(this.disp_date.getFullYear(), this.disp_date.getMonth(), this.disp_date.getDate())
+                this.current_day = this.disp_date
+                this.get3week()
+              } else {
+                let _tmpdt = new Date(this.disp_date.getFullYear(), this.disp_date.getMonth() + index, 0)
+                let maxday = _tmpdt.getDate()
+                let _day = maxday < this.disp_date.getDate() ? maxday : this.disp_date.getDate()
+                console.log(_day)
 
-                    this.disp_date = new Date(this.disp_date.getFullYear(), this.disp_date.getMonth() + index, _day)
-                    if (!is_click) {
-                        this.checkedDay = this.format(this.disp_date.getFullYear(), this.disp_date.getMonth(), this.disp_date.getDate())
-                        console.log(this.checkedDay)
-                    }
-                    this.get3month()
+                this.disp_date = new Date(this.disp_date.getFullYear(), this.disp_date.getMonth() + index, _day)
+                if (!is_click) {
+                  this.checkedDay = this.format(this.disp_date.getFullYear(), this.disp_date.getMonth(), this.disp_date.getDate())
+                  console.log(this.checkedDay)
                 }
-                this.$refs.calendar_swiper.move_change()
-                this.$emit('swiperCalendar', this.disp_date);
+                this.get3month()
+              }
+              this.$refs.calendar_swiper.move_change()
+              this.$emit('swiperCalendar', this.disp_date);
             }
         },
         nextHandle() {
@@ -319,163 +325,152 @@ export default {
 }
 </script>
 <style lang="scss" scoped>
-.ignore {
-    .calendar-box {
-        position: relative;
-        //color: #fff;
-        background: #fff;
-        z-index: 99;
-        transition: all .2s ease;
-        overflow: hidden;
+.calendar-box {
+  position: relative;
+  background: #fff;
+  z-index: 99;
+  transition: all .2s ease;
+  overflow: hidden;
+}
+
+.calendar-head {
+  display: flex;
+  height: 30px;
+  line-height: 30px;
+  padding-left: 0;
+}
+
+.calendar-head li {
+  flex-grow: 1;
+  text-align: center;
+  color: #9AA5B1;
+  font-size: 13px;
+  list-style: none;
+}
+
+.calendar-today {
+  @include flex(space-between, center);
+  width: 100%;
+  height: 50px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1F2933;
+  z-index: 9;
+  background: #fff;
+
+  .arrow {
+    display: block;
+    padding: 10px;
+    color: #9AA5B1;
+    font-size: 16px;
+
+    &.next {
+      img {
+        transform: rotate(-180deg);
+      }
     }
 
-    .calendar-head {
-        display: flex;
-        height: 30px;
-        line-height: 30px;
+    img {
+      width: 16px;
     }
-
-    .calendar-head li {
-        flex-grow: 1;
-        text-align: center;
-        color: #9AA5B1;
-        font-size: 13px;
-    }
-
-    .calendar-today {
-        @include flex(space-between, center);
-        width: 100%;
-        height: 50px;
-        font-size: 16px;
-        font-weight: 500;
-        color: #1F2933;
-        z-index: 9;
-        background: #fff;
-
-        .arrow {
-            display: block;
-            padding: 10px;
-            color: #9AA5B1;
-            font-size: 16px;
-        }
-    }
-
-    ::v-deep.calendar-toggle {
-        position: relative;
-        width: 100%;
-        height: 25px;
-        z-index: 100;
-        bottom: 0;
-        background-color: #fff;
-        @include flex(center, center);
+  }
+}
 
 
-        i {
-            font-size: 20px;
-            color: #D6D6D6;
-        }
+.swiper-item {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+}
 
-        .van-icon-minus {
-            font-size: 30px;
-            font-weight: bold;
-        }
-    }
+.swiper-item:nth-child(1) {
+  left: -100%;
+}
 
-    .swiper-item {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        top: 0;
-    }
+.swiper-item:nth-child(2) {
+  left: 0;
+}
 
-    .swiper-item:nth-child(1) {
-        left: -100%;
-    }
+.swiper-item:nth-child(3) {
+  left: 100%;
+}
 
-    .swiper-item:nth-child(2) {
-        left: 0;
-    }
+.month ul {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 40px;
+  min-height: 40px;
+  border-right: 1px solid #eee;
+}
 
-    .swiper-item:nth-child(3) {
-        left: 100%;
-    }
+.month li {
+  flex: 1;
+  flex-grow: 1;
+  color: #333;
+  overflow: hidden;
+}
 
-    .month ul {
-        display: flex;
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 40px;
-        min-height: 40px;
-        border-right: 1px solid #eee;
-    }
+.week-day {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  margin: auto;
+  text-align: center;
+  border: 0;
+  overflow: hidden;
+  z-index: 1;
 
-    .month li {
-        flex: 1;
-        flex-grow: 1;
-        color: #333;
-        overflow: hidden;
-    }
-
-    .week-day {
-        position: relative;
-        width: 32px;
-        height: 32px;
-        margin: auto;
-        text-align: center;
-        border: 0;
-        overflow: hidden;
-        z-index: 1;
-
-        ::v-deep.record {
-            display: inline-block;
-            position: absolute;
-            bottom: 3px;
-            left: 50%;
-            transform: translate(-50%, 0);
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background-color: red;
-        }
-    }
+  ::v-deep.record {
+    display: inline-block;
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translate(-50%, 0);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: red;
+  }
+}
 
 
-    .week-day i {
-        display: block;
-        text-align: center;
-        font-style: normal;;
-        font-size: 14px;
-        line-height: 32px;
-        width: 32px;
-        height: 32px;
-        border: 0.5px solid #E4E7EB;
-        border-radius: 2px;
-    }
+.week-day i {
+  display: block;
+  text-align: center;
+  font-style: normal;;
+  font-size: 14px;
+  line-height: 32px;
+  width: 32px;
+  height: 32px;
+  border: 0.5px solid #E4E7EB;
+  border-radius: 2px;
+}
 
-    .week-day.is-checked {
-        i {
-            color: #fff !important;
-            background-color: $--color-primary;
-        }
-    }
+.week-day.is-checked {
+  i {
+    color: #fff !important;
+    background-color: $--color-primary;
+  }
+}
 
-    .week-day.is-checked.is-today {
-        .today {
-            color: #fff;
-        }
-    }
+.week-day.is-checked.is-today {
+  .today {
+    color: #fff;
+  }
+}
 
 
-    .other-month {
-        color: #ccc;
-    }
+.other-month {
+  color: #ccc;
+}
 
-    .is-today {
-        .today {
-            font-size: 16px;
-            color: $--color-primary;
-        }
-    }
+.is-today {
+  .today {
+    font-size: 16px;
+    color: $--color-primary;
+  }
 }
 </style>

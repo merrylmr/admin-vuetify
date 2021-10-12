@@ -1,5 +1,5 @@
 <template>
-  <div class="calendar-mobile">
+  <div class="calendar-demo">
     <CalendarComp
         :changeMode="true"
     ></CalendarComp>
@@ -14,3 +14,11 @@ export default {
   components: {CalendarComp}
 }
 </script>
+
+
+<style scoped lang="scss">
+.calendar-demo {
+  height: 100vh;
+  background-color: #eee;
+}
+</style>

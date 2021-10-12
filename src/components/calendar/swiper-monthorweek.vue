@@ -16,7 +16,9 @@
                  v-if="changeMode"
                  @click="toggleMode"
             >
-                <van-icon :name="mode==='week'?'arrow-down':'minus'"/>
+              <img v-show="mode==='week'" src="./assets/arrow-down.svg">
+              <img v-show="mode==='month'" src="./assets/minus.svg">
+              <!--                <van-icon :name="mode==='week'?'arrow-down':'minus'"/>-->
             </div>
         </div>
     </transition>
@@ -239,15 +241,31 @@ export default {
     }
 }
 </script>
-<style scoped>
+<style scoped lang="scss">
 .calendarBox {
-    position: relative;
-    height: 282px;
-    z-index: 99;
+  position: relative;
+  height: 282px;
+  z-index: 99;
 }
 
 
 .transition {
-    transition: all .3s linear;
+  transition: all .3s linear;
+}
+
+.calendar-toggle {
+  position: relative;
+  width: 100%;
+  height: 25px;
+  z-index: 100;
+  bottom: 0;
+  background-color: #fff;
+  @include flex(center, center);
+
+
+img {
+  width: 20px;
+}
+
 }
 </style>
