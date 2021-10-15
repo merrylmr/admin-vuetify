@@ -16,6 +16,7 @@
     "scroll-anchor": "^1.0.3",
     "swiper": "5.x",
     "tinymce": "5.8.1",
+    "v-calendar-mobile": "^1.0.0",
     "vue": "^2.6.11",
     "vue-awesome-swiper": "^4.1.1",
     "vue-navigation": "^1.1.4",

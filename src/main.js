@@ -12,15 +12,21 @@ import * as echarts from 'echarts';
 
 Vue.prototype.$echarts = echarts;
 import lodash from 'lodash'
-Vue.prototype._=lodash
+
+Vue.prototype._ = lodash
 
 import xKeepAlive from './components/xKeepAlive/index'
-Vue.use(xKeepAlive, { router })
+
+Vue.use(xKeepAlive, {router})
 
 
 import mockApi from '../public/mock/index.js'
 
 mockApi();
+
+import vCalendarMobile from 'v-calendar-mobile'
+
+Vue.use(vCalendarMobile)
 
 new Vue({
     router,
