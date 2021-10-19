@@ -1,17 +1,21 @@
 <template>
   <div class="calendar-demo">
-    <CalendarComp
-        :changeMode="true"
-    ></CalendarComp>
+    <v-calendar-mobile
+        :changeMode="true">
+    </v-calendar-mobile>
   </div>
 </template>
 
 <script>
-import CalendarComp from '@/components/calendar/Index.vue'
 
 export default {
-  name: 'v-calendar',
-  components: {CalendarComp}
+  name: 'calendar-demo',
+  data() {
+    return {}
+  },
+  methods: {},
+  mounted() {
+  }
 }
 </script>
 

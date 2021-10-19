@@ -88,7 +88,7 @@ const routes = [
         path: '/calendar',
         component: () => import ('@/views/comps/calendar/Index.vue'),
         name: 'calendar',
-    }
+    },
 ]
 
 const router = new VueRouter({
