@@ -19,7 +19,9 @@ import xKeepAlive from './components/xKeepAlive/index'
 
 Vue.use(xKeepAlive, {router})
 
-
+import iView from 'iview';
+import 'iview/dist/styles/iview.css';    // 使用 CSS
+Vue.use(iView);
 import mockApi from '../public/mock/index.js'
 
 mockApi();
