@@ -14,7 +14,7 @@
     "echarts": "^5.1.2",
     "iview": "^3.5.4",
     "lodash": "^4.17.21",
-    "prerender-spa-plugin": "^3.4.0",
+    "prerender-spa-plugin": "3.4.0",
     "scroll-anchor": "^1.0.3",
     "swiper": "5.x",
     "tinymce": "5.8.1",
