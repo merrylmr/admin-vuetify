@@ -1,6 +1,6 @@
 const path = require('path')
-const PrerenderSPAPlugin = require('prerender-spa-plugin');
-const Renderer = PrerenderSPAPlugin.PuppeteerRenderer;
+// const PrerenderSPAPlugin = require('prerender-spa-plugin');
+// const Renderer = PrerenderSPAPlugin.PuppeteerRenderer;
 const IsProd = process.env.NODE_ENV === 'production';
 module.exports = {
     configureWebpack: () => {
