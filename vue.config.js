@@ -5,20 +5,20 @@ const IsProd = process.env.NODE_ENV === 'production';
 module.exports = {
     configureWebpack: () => {
         const plugins = IsProd ? [
-            new PrerenderSPAPlugin({
-                staticDir: path.join(__dirname, 'dist'),
-                routes: ['/', '/calendar'],
-                server: {
-                    port: 8001
-                },
-                renderer: new Renderer({
-                    inject: {
-                        foo: 'bar'
-                    },
-                    renderAfterDocumentEvent: 'render-event',
-
-                })
-            })
+            // new PrerenderSPAPlugin({
+            //     staticDir: path.join(__dirname, 'dist'),
+            //     routes: ['/', '/calendar'],
+            //     server: {
+            //         port: 8001
+            //     },
+            //     renderer: new Renderer({
+            //         inject: {
+            //             foo: 'bar'
+            //         },
+            //         renderAfterDocumentEvent: 'render-event',
+            //
+            //     })
+            // })
         ] : []
         return {
             resolve: {
