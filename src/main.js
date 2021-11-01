@@ -31,5 +31,8 @@ Vue.use(vCalendarMobile)
 new Vue({
     router,
     vuetify,
+    mounted() {
+        document.dispatchEvent(new Event('render-event'))
+    },
     render: h => h(App),
 }).$mount('#app')
