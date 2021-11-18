@@ -16,6 +16,7 @@
     "lodash": "^4.17.21",
     "scroll-anchor": "^1.0.3",
     "swiper": "5.x",
+    "three": "0.134.0",
     "tinymce": "5.8.1",
     "v-calendar-mobile": "^1.0.2",
     "vue": "^2.6.11",

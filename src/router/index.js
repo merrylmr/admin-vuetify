@@ -81,6 +81,11 @@ const routes = [
                 path: '/noteList',
                 component: () => import ('@/views/note/Index.vue'),
                 name: 'noteList',
+            },
+            {
+                path: '/demo1',
+                component: () => import ('@/views/threejs/Demo1.vue'),
+                name: 'demo1',
             }
         ]
     },

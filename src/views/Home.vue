@@ -159,6 +159,18 @@ export default {
           ]
         },
         {
+          label: 'threejs',
+          value: 'threejs',
+          icon: 'mdi-notebook-outline',
+          sub: [
+            {
+              label: 'demo1',
+              value: 'demo1',
+              icon: 'mdi-format-list-bulleted',
+            }
+          ]
+        },
+        {
           label: '国际化',
           value: 'international',
           icon: 'mdi-earth'
