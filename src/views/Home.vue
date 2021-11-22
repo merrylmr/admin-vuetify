@@ -167,6 +167,11 @@ export default {
               label: 'demo1',
               value: 'demo1',
               icon: 'mdi-format-list-bulleted',
+            },
+            {
+              label: 'demo2',
+              value: 'demo2',
+              icon: 'mdi-format-list-bulleted',
             }
           ]
         },

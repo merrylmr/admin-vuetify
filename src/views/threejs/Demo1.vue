@@ -38,16 +38,16 @@ export default {
         scene.add(point); //点光源添加到场景中
 
 
-        var point2 = new THREE.PointLight(0xffffff);
-        point2.position.set(-400, -200, -300); //点光源位置
-        scene.add(point2); //点光源添加到场景中
+        // var point2 = new THREE.PointLight(0xffffff);
+        // point2.position.set(-400, -200, -300); //点光源位置
+        // scene.add(point2); //点光源添加到场景中
         // 环境光
         var ambient = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambient);
         // // 方向光1
-        var directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        directionalLight.position.set(400, 200, 300);
-        scene.add(directionalLight);
+        // var directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        // directionalLight.position.set(400, 200, 300);
+        // scene.add(directionalLight);
         // 方向光2
         // var directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
         // directionalLight.position.set(-400, -200, -300);

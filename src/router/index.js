@@ -82,11 +82,6 @@ const routes = [
                 component: () => import ('@/views/note/Index.vue'),
                 name: 'noteList',
             },
-            {
-                path: '/demo1',
-                component: () => import ('@/views/threejs/Demo1.vue'),
-                name: 'demo1',
-            }
         ]
     },
     {
@@ -94,6 +89,16 @@ const routes = [
         component: () => import ('@/views/comps/calendar/Index.vue'),
         name: 'calendar',
     },
+    {
+        path: '/demo1',
+        component: () => import ('@/views/threejs/Demo1.vue'),
+        name: 'demo1',
+    },
+    {
+        path: '/demo2',
+        component: () => import ('@/views/threejs/Demo.vue'),
+        name: 'demo2',
+    }
 ]
 
 const router = new VueRouter({
