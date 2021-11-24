@@ -20,22 +20,38 @@ export default {
         let height = document.body.clientHeight;
 
         scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-        camera.position.set(0, 20, 100);
+        // 透视投影相机
+        camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+        camera.position.set(100, 0, 0);
+
         renderer = new THREE.WebGLRenderer({
           // 反边缘锯齿
           antialias: true
         });
         renderer.setSize(width, height);
-        renderer.setClearColor(0xffffff, 1); //设置背景颜色
+        renderer.setClearColor(0xeeeeee, 1); //设置背景颜色
         document.getElementById('container').appendChild(renderer.domElement);
 
         new OrbitControls(camera, renderer.domElement)
 
+        var spotLight = new THREE.SpotLight( 0xffffff );
+        spotLight.angle = Math.PI /6
+        spotLight.position.set(50, 90, 50);
+        scene.add( spotLight );
+        spotLight.castShadow = true;
+
+        spotLight.shadow.mapSize.width = 2000;
+        spotLight.shadow.mapSize.height = 2000;
+
+        spotLight.shadow.camera.near = 1;
+        spotLight.shadow.camera.far = 4000;
+        spotLight.shadow.camera.fov = 20;
+
+
         // 光源
-        var point = new THREE.PointLight(0xffffff);
-        point.position.set(400, 200, 300); //点光源位置
-        scene.add(point); //点光源添加到场景中
+        // var point = new THREE.PointLight(0xffffff);
+        // point.position.set(400, 200, 300); //点光源位置
+        // scene.add(point); //点光源添加到场景中
 
 
         // var point2 = new THREE.PointLight(0xffffff);
