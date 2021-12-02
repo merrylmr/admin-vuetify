@@ -90,6 +90,11 @@ const routes = [
         name: 'calendar',
     },
     {
+        path: '/editor-3d',
+        component: () => import ('@/views/threejs/Index.vue'),
+        name: 'editor3d',
+    },
+    {
         path: '/demo1',
         component: () => import ('@/views/threejs/Demo1.vue'),
         name: 'demo1',
@@ -98,6 +103,16 @@ const routes = [
         path: '/demo2',
         component: () => import ('@/views/threejs/Demo.vue'),
         name: 'demo2',
+    },
+    {
+        path: '/first',
+        component: () => import ('@/views/threejs/First.vue'),
+        name: 'first',
+    },
+    {
+        path: '/two',
+        component: () => import ('@/views/threejs/Two.vue'),
+        name: 'two',
     }
 ]
 

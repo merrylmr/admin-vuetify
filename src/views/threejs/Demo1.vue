@@ -23,6 +23,8 @@ export default {
         // 透视投影相机
         camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
         camera.position.set(100, 0, 0);
+        let cameraHelper = new THREE.CameraHelper(camera)
+        scene.add(cameraHelper)
 
         renderer = new THREE.WebGLRenderer({
           // 反边缘锯齿
