@@ -3,6 +3,7 @@
       max-width="800px"
       width="800px"
       :value="visible"
+      :overlay-opacity="0.8"
       @click:outside="closeHandle">
     <v-card>
       <v-card-title>作品预览</v-card-title>

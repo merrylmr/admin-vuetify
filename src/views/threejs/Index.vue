@@ -24,7 +24,7 @@
               class="btn"
               color="primary"
               small
-              @click="setCameraPosHandle">把当前视觉设置为初始视觉
+              @click="setCameraPosHandle">把当前视觉设置为初始视角
           </v-btn>
         </div>
       </div>
@@ -34,7 +34,9 @@
             当前初始视觉
           </div>
           <div class="section-content">
-            <v-img src="https://picsum.photos/510/300?random"></v-img>
+            <div id="preview-thumbnail">
+
+            </div>
           </div>
         </div>
         <div class="section">
@@ -129,6 +131,7 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
 import PreviewDlg from './comps/Preview.vue'
+import html2canvas from "html2canvas";
 export default {
   name: 'editor-3d',
   data() {
@@ -139,7 +142,7 @@ export default {
         far: 100,
         fov: 90,
         // 最大仰角和俯视角
-        minPolarAngle: 0,
+        minPolarAngle: -90,
         maxPolarAngle: 90,
         // 水平方向视角限制
         minAzimuthAngle: -180,
@@ -156,12 +159,27 @@ export default {
   },
   components: {PreviewDlg},
   methods: {
-    init() {
+    createThumbnail() {
+      const dom = document.querySelector('#container');
+      const thumbnailDom = document.querySelector('#preview-thumbnail');
+      html2canvas(dom, {
+        useCORS: true,
+        allowTaint: false,
+      }).then(canvas => {
+        thumbnailDom.innerHTML = ''
+        thumbnailDom.appendChild(canvas);
+      })
+
+
+    },
+    async init() {
       const container = document.getElementById('container');
 
       const width = container.clientWidth;
       const height = container.clientHeight;
-      const renderer = new THREE.WebGLRenderer();
+      const renderer = new THREE.WebGLRenderer({
+        preserveDrawingBuffer: true
+      });
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(width, height)
       container.appendChild(renderer.domElement)
@@ -183,17 +201,20 @@ export default {
 
 
       function renderModel(url) {
-        const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
-        sphereGeometry.scale(1, 1, -1);
-        const texture = new THREE.TextureLoader().load(url, () => {
-          const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
-          const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-          scene.add(sphere)
-          render();
-        });
+        return new Promise((resolve) => {
+          const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
+          sphereGeometry.scale(1, 1, -1);
+          const texture = new THREE.TextureLoader().load(url, () => {
+            const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
+            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            scene.add(sphere)
+            resolve();
+          });
+        })
       }
 
-      renderModel('3d/images/scene.jpeg');
+      await renderModel('3d/images/scene.jpeg');
+      render();
 
       function render() {
         renderer.render(scene, camera);
@@ -239,11 +260,13 @@ export default {
     // 设置当前视觉
     setCameraPosHandle() {
       this.cameraPos = this.camera.position;
+      this.createThumbnail()
     }
   },
   mounted() {
-    this.$nextTick(() => {
-      this.init();
+    this.$nextTick(async () => {
+      await this.init();
+      this.createThumbnail();
     })
   },
   watch: {
@@ -350,6 +373,16 @@ export default {
     font-size: 16px;
     font-weight: bold;
     margin: 10px 0;
+  }
+}
+
+#preview-thumbnail {
+  width: 100%;
+  height: 120px;
+
+  ::v-deep canvas {
+    width: 100% !important;
+    height: 100% !important;
   }
 }
 
