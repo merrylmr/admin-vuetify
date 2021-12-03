@@ -10,15 +10,27 @@
           </v-btn>
         </div>
       </div>
-
     </div>
     <div class="content">
-      <div class="left-sidebar">left-sidebar</div>
+      <div class="left-sidebar">
+        <ul class="menu-list">
+          <li
+              class="menu-item"
+              v-for="(item,index) in menuNav"
+              :key="index"
+              :class="{'is-active':activeName===item.value}"
+              @click="changeMenu(item)">
+            <div class="menu-item__icon">
+              <v-icon v-text="item.icon"></v-icon>
+            </div>
+            <div class="menu-item__label">{{ item.label }}</div>
+          </li>
+        </ul>
+      </div>
       <div class="stage">
         <div class="view-area"
              id="container">
         </div>
-        <!--   这里：需要动态去设置宽高     -->
         <div class="help-frame">
           <v-btn
               class="btn"
@@ -29,90 +41,95 @@
         </div>
       </div>
       <div class="right-sidebar">
-        <div class="section">
-          <div class="section-title">
-            当前初始视觉
-          </div>
-          <div class="section-content">
-            <div id="preview-thumbnail">
+        <div v-if="$route.name==='view'">
+          <div class="section">
+            <div class="section-title">
+              当前初始视觉
+            </div>
+            <div class="section-content">
+              <div id="preview-thumbnail">
 
+              </div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-title">视觉（FOV）范围设置</div>
+            <v-range-slider
+                :min="0.1"
+                :max="180"
+                :step="0.1"
+                :value="[params.near,params.far]"
+                @input="changeHandle($event,'fov')"
+            ></v-range-slider>
+            <v-row>
+              <v-col cols="4">
+                <v-text-field label="最近"
+                              v-model="params.near"></v-text-field>
+              </v-col>
+              <v-col cols="4">
+                <v-text-field label="初始"
+                              v-model="params.fov"></v-text-field>
+              </v-col>
+              <v-col cols="4">
+                <v-text-field label="最远"
+                              v-model="params.far"></v-text-field>
+              </v-col>
+            </v-row>
+            <!--  垂直视角限制         -->
+          </div>
+          <div class="section">
+            <div class="section-title">
+              垂直视觉限制
+            </div>
+            <div class="section-content">
+              <v-range-slider
+                  :min="-90"
+                  :max="180"
+                  :value="[params.minPolarAngle,params.maxPolarAngle]"
+                  @input="changeHandle($event,'vertical')"
+              ></v-range-slider>
+              <v-row>
+                <v-col cols="6">
+                  <v-text-field
+                      label="最低"
+                      v-model="params.minPolarAngle"></v-text-field>
+                </v-col>
+                <v-col cols="6">
+                  <v-text-field
+                      label="最高"
+                      v-model="params.maxPolarAngle"></v-text-field>
+                </v-col>
+              </v-row>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-title">
+              水平视觉限制
+            </div>
+            <div class="section-content">
+              <v-range-slider
+                  :min="-180"
+                  :max="180"
+                  :value="[params.minAzimuthAngle,params.maxAzimuthAngle]"
+                  @input="changeHandle($event,'horizontal')"
+              ></v-range-slider>
+              <v-row>
+                <v-col cols="6">
+                  <v-text-field
+                      label="最左"
+                      v-model="params.minAzimuthAngle"></v-text-field>
+                </v-col>
+                <v-col cols="6">
+                  <v-text-field
+                      label="最右"
+                      v-model="params.maxAzimuthAngle"></v-text-field>
+                </v-col>
+              </v-row>
             </div>
           </div>
         </div>
-        <div class="section">
-          <div class="section-title">视觉（FOV）范围设置</div>
-          <v-range-slider
-              :min="0.1"
-              :max="180"
-              :step="0.1"
-              :value="[params.near,params.far]"
-              @input="changeHandle($event,'fov')"
-          ></v-range-slider>
-          <v-row>
-            <v-col cols="4">
-              <v-text-field label="最近"
-                            v-model="params.near"></v-text-field>
-            </v-col>
-            <v-col cols="4">
-              <v-text-field label="初始"
-                            v-model="params.fov"></v-text-field>
-            </v-col>
-            <v-col cols="4">
-              <v-text-field label="最远"
-                            v-model="params.far"></v-text-field>
-            </v-col>
-          </v-row>
-          <!--  垂直视角限制         -->
-        </div>
-        <div class="section">
-          <div class="section-title">
-            垂直视觉限制
-          </div>
-          <div class="section-content">
-            <v-range-slider
-                :min="-90"
-                :max="180"
-                :value="[params.minPolarAngle,params.maxPolarAngle]"
-                @input="changeHandle($event,'vertical')"
-            ></v-range-slider>
-            <v-row>
-              <v-col cols="6">
-                <v-text-field
-                    label="最低"
-                    v-model="params.minPolarAngle"></v-text-field>
-              </v-col>
-              <v-col cols="6">
-                <v-text-field
-                    label="最高"
-                    v-model="params.maxPolarAngle"></v-text-field>
-              </v-col>
-            </v-row>
-          </div>
-        </div>
-        <div class="section">
-          <div class="section-title">
-            水平视觉限制
-          </div>
-          <div class="section-content">
-            <v-range-slider
-                :min="-180"
-                :max="180"
-                :value="[params.minAzimuthAngle,params.maxAzimuthAngle]"
-                @input="changeHandle($event,'horizontal')"
-            ></v-range-slider>
-            <v-row>
-              <v-col cols="6">
-                <v-text-field
-                    label="最左"
-                    v-model="params.minAzimuthAngle"></v-text-field>
-              </v-col>
-              <v-col cols="6">
-                <v-text-field
-                    label="最右"
-                    v-model="params.maxAzimuthAngle"></v-text-field>
-              </v-col>
-            </v-row>
-          </div>
+        <div v-else-if="$route.name==='hot'">
+          <HotSpot></HotSpot>
         </div>
       </div>
     </div>
@@ -132,6 +149,8 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
 import PreviewDlg from './comps/Preview.vue'
 import html2canvas from "html2canvas";
+import HotSpot from './comps/HotSpot.vue'
+// TODO: 水平和垂直的角度需要再修改修改
 export default {
   name: 'editor-3d',
   data() {
@@ -154,12 +173,32 @@ export default {
         y: 0,
         z: 0.1
       },
-      isShowPreviewDlg: false
+      isShowPreviewDlg: false,
+      menuNav: [
+        {
+          label: '基础',
+          value: 'basic',
+          icon: 'mdi-format-list-bulleted'
+        },
+        {
+          label: '视角',
+          value: 'view',
+          icon: 'mdi-eye-outline'
+        },
+        {
+          label: '热点',
+          value: 'hot',
+          icon: 'mdi-map-marker-outline'
+        }
+      ],
+      activeName: 'view'
     }
   },
-  components: {PreviewDlg},
+  components: {PreviewDlg, HotSpot},
   methods: {
     createThumbnail() {
+      if (this.$route.name !== 'view') return
+      console.log('this.$route.name', this.$route.name);
       const dom = document.querySelector('#container');
       const thumbnailDom = document.querySelector('#preview-thumbnail');
       html2canvas(dom, {
@@ -261,9 +300,16 @@ export default {
     setCameraPosHandle() {
       this.cameraPos = this.camera.position;
       this.createThumbnail()
+    },
+    changeMenu(item) {
+      this.activeName = item.value;
+      this.$router.push({
+        name: item.value
+      })
     }
   },
   mounted() {
+    this.activeName = this.$route.name;
     this.$nextTick(async () => {
       await this.init();
       this.createThumbnail();
@@ -386,4 +432,37 @@ export default {
   }
 }
 
+.menu-list,
+.menu-list .menu-item {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menu-item {
+  cursor: pointer;
+  @include flex(center, center);
+  flex-direction: column;
+  padding: 5px 0 !important;
+
+  &.is-active {
+    background-color: #5e35b1 !important;
+
+    .menu-item__icon i,
+    .menu-item__label {
+      color: #fff;
+    }
+  }
+
+  &__icon {
+    i {
+      font-size: 18px;
+    }
+  }
+
+  &__label {
+    font-size: 12px;
+    color: #666;
+  }
+}
 </style>

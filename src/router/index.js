@@ -93,6 +93,23 @@ const routes = [
         path: '/editor-3d',
         component: () => import ('@/views/threejs/Index.vue'),
         name: 'editor3d',
+        children: [
+            {
+                path: 'view',
+                name: 'view',
+                component: () => import ('@/views/threejs/Index.vue'),
+            },
+            {
+                path: 'basic',
+                name: 'basic',
+                component: () => import ('@/views/threejs/Index.vue'),
+            },
+            {
+                path: 'hot',
+                name: 'hot',
+                component: () => import ('@/views/threejs/Index.vue'),
+            }
+        ]
     },
     {
         path: '/demo1',
