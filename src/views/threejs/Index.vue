@@ -5,7 +5,9 @@
         <div class="sub-title">作品标题</div>
         <div class="right">
           <v-btn class="ma-2" small outlined color="success">保存</v-btn>
-          <v-btn class="ma-2" small outlined color="indigo">预览</v-btn>
+          <v-btn class="ma-2" small outlined color="indigo"
+                 @click="isShowPreviewDlg=true">预览
+          </v-btn>
         </div>
       </div>
 
@@ -21,7 +23,8 @@
           <v-btn
               class="btn"
               color="primary"
-              small>把当前视觉设置为初始视觉
+              small
+              @click="setCameraPosHandle">把当前视觉设置为初始视觉
           </v-btn>
         </div>
       </div>
@@ -30,24 +33,31 @@
           <div class="section-title">
             当前初始视觉
           </div>
-          <div class="section-content"></div>
+          <div class="section-content">
+            <v-img src="https://picsum.photos/510/300?random"></v-img>
+          </div>
         </div>
         <div class="section">
           <div class="section-title">视觉（FOV）范围设置</div>
           <v-range-slider
-              :min="0"
+              :min="0.1"
               :max="180"
-              :range="range"
+              :step="0.1"
+              :value="[params.near,params.far]"
+              @input="changeHandle($event,'fov')"
           ></v-range-slider>
           <v-row>
             <v-col cols="4">
-              <v-text-field label="最近"></v-text-field>
+              <v-text-field label="最近"
+                            v-model="params.near"></v-text-field>
             </v-col>
             <v-col cols="4">
-              <v-text-field label="初始"></v-text-field>
+              <v-text-field label="初始"
+                            v-model="params.fov"></v-text-field>
             </v-col>
             <v-col cols="4">
-              <v-text-field label="最远"></v-text-field>
+              <v-text-field label="最远"
+                            v-model="params.far"></v-text-field>
             </v-col>
           </v-row>
           <!--  垂直视角限制         -->
@@ -56,17 +66,61 @@
           <div class="section-title">
             垂直视觉限制
           </div>
-          <div class="section-content"></div>
+          <div class="section-content">
+            <v-range-slider
+                :min="-90"
+                :max="180"
+                :value="[params.minPolarAngle,params.maxPolarAngle]"
+                @input="changeHandle($event,'vertical')"
+            ></v-range-slider>
+            <v-row>
+              <v-col cols="6">
+                <v-text-field
+                    label="最低"
+                    v-model="params.minPolarAngle"></v-text-field>
+              </v-col>
+              <v-col cols="6">
+                <v-text-field
+                    label="最高"
+                    v-model="params.maxPolarAngle"></v-text-field>
+              </v-col>
+            </v-row>
+          </div>
         </div>
         <div class="section">
           <div class="section-title">
             水平视觉限制
           </div>
-          <div class="section-content"></div>
+          <div class="section-content">
+            <v-range-slider
+                :min="-180"
+                :max="180"
+                :value="[params.minAzimuthAngle,params.maxAzimuthAngle]"
+                @input="changeHandle($event,'horizontal')"
+            ></v-range-slider>
+            <v-row>
+              <v-col cols="6">
+                <v-text-field
+                    label="最左"
+                    v-model="params.minAzimuthAngle"></v-text-field>
+              </v-col>
+              <v-col cols="6">
+                <v-text-field
+                    label="最右"
+                    v-model="params.maxAzimuthAngle"></v-text-field>
+              </v-col>
+            </v-row>
+          </div>
         </div>
       </div>
     </div>
-
+    <PreviewDlg
+        v-if="isShowPreviewDlg"
+        :visible="isShowPreviewDlg"
+        :params="params"
+        :camera-pos="cameraPos"
+        @close="isShowPreviewDlg=false">
+    </PreviewDlg>
   </div>
 </template>
 
@@ -74,14 +128,33 @@
 <script>
 import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
-
+import PreviewDlg from './comps/Preview.vue'
 export default {
   name: 'editor-3d',
   data() {
     return {
-      range: [70, 120]
+      // 相机参数
+      params: {
+        near: 0.1,
+        far: 100,
+        fov: 90,
+        // 最大仰角和俯视角
+        minPolarAngle: 0,
+        maxPolarAngle: 90,
+        // 水平方向视角限制
+        minAzimuthAngle: -180,
+        maxAzimuthAngle: 180,
+      },
+      camera: null,
+      cameraPos: {
+        x: 0,
+        y: 0,
+        z: 0.1
+      },
+      isShowPreviewDlg: false
     }
   },
+  components: {PreviewDlg},
   methods: {
     init() {
       const container = document.getElementById('container');
@@ -95,10 +168,18 @@ export default {
 
 
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(90, width / height, 0.1, 100);
+      const camera = new THREE.PerspectiveCamera(this.params.fov, width / height, this.params.near, this.params.far);
       camera.position.z = 0.01;
 
+      this.camera = camera;
+
       const controls = new OrbitControls(camera, renderer.domElement);
+
+      controls.minPolarAngle = this.degToRad(this.params.minPolarAngle)
+      controls.maxPolarAngle = this.degToRad(this.params.maxPolarAngle)
+
+      controls.minAzimuthAngle = this.degToRad(this.params.minAzimuthAngle);
+      controls.maxAzimuthAngle = this.degToRad(this.params.maxAzimuthAngle);
 
 
       function renderModel(url) {
@@ -132,12 +213,49 @@ export default {
       }
 
       window.addEventListener('resize', resizeHandle);
+    },
+    // 角度转弧度
+    degToRad(deg) {
+      return Math.PI / 180 * deg
+    },
+    changeHandle(v, key) {
+      switch (key) {
+        case 'horizontal':
+          this.params.minAzimuthAngle = v[0];
+          this.params.maxAzimuthAngle = v[1];
+          break;
+        case 'vertical':
+          this.params.minPolarAngle = v[0];
+          this.params.maxPolarAngle = v[1];
+          break;
+        case 'fov':
+          this.params.near = v[0];
+          this.params.far = v[1];
+          break;
+        default:
+          break;
+      }
+    },
+    // 设置当前视觉
+    setCameraPosHandle() {
+      this.cameraPos = this.camera.position;
     }
   },
   mounted() {
     this.$nextTick(() => {
       this.init();
     })
+  },
+  watch: {
+    params: {
+      handler(n, o) {
+        console.log('new', n, 'old', o)
+        if (!this._.isEqual(n, o)) {
+          console.log('new', n, 'old', o)
+        }
+      },
+      deep: true
+    }
   }
 }
 </script>
@@ -231,6 +349,7 @@ export default {
   &-title {
     font-size: 16px;
     font-weight: bold;
+    margin: 10px 0;
   }
 }
 
