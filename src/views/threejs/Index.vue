@@ -217,7 +217,7 @@ export default {
           pos: {
             x: 0,
             y: 0,
-            z: 0
+            z: 0.1
           }
         }
       ],
@@ -228,9 +228,14 @@ export default {
   computed: {
     transformStyle() {
       return (point) => {
-        const pos = this.worldVector2Screen(point);
+        const cameraPos = this.camera.position;
+        const pos = this.worldVector2Screen({
+          x: cameraPos.x - point.x,
+          y: cameraPos.y - point.y,
+          z: cameraPos.z - point.z
+        });
         return {
-          transform: `translate(${pos.x}px,${pos.y}px) translate(-40px,-40px)`
+          transform: `translateZ(0px) translate(${pos.x}px,${pos.y}px) translate(-40px,-40px)`
         }
       }
 
@@ -273,12 +278,12 @@ export default {
       this.camera = camera;
 
       const controls = new OrbitControls(camera, renderer.domElement);
-
-      controls.minPolarAngle = this.degToRad(this.params.minPolarAngle)
-      controls.maxPolarAngle = this.degToRad(this.params.maxPolarAngle)
-
-      controls.minAzimuthAngle = this.degToRad(this.params.minAzimuthAngle);
-      controls.maxAzimuthAngle = this.degToRad(this.params.maxAzimuthAngle);
+      // controls.zoomSpeed = 0.5;
+      // controls.minPolarAngle = this.degToRad(this.params.minPolarAngle)
+      // controls.maxPolarAngle = this.degToRad(this.params.maxPolarAngle)
+      //
+      // controls.minAzimuthAngle = this.degToRad(this.params.minAzimuthAngle);
+      // controls.maxAzimuthAngle = this.degToRad(this.params.maxAzimuthAngle);
 
 
       function renderModel(url) {
@@ -378,7 +383,7 @@ export default {
       })
     },
     //TODO: 边界情况处理
-    pointMoveStartHandle(e) {
+    pointMoveStartHandle(e, item) {
       // 操作的是样式（style.transform）
       console.log('e.currentTarget', e.currentTarget)
       const target = e.currentTarget;
@@ -414,10 +419,23 @@ export default {
         }
 
         console.log('diffX', diffX, diffY)
-        target.style.transform = `translate(${translateX}px,${translateY}px) translate(-40px,-40px)`
+        target.style.transform = `translateZ(0px) translate(${translateX}px,${translateY}px) translate(-40px,-40px)`
       }
       const mouseUpHandle = (e) => {
         console.log('mouseUpHandle:', e)
+        // TODO: 这里屏幕坐标转化成世界坐标，有些许偏差
+        const pos = this.screenVector2World({
+          x: translateX,
+          y: translateY
+        })
+        // 相对于当前的相机位置坐标
+        const cameraPos = this.camera.position;
+        item.pos = {
+          x: cameraPos.x - pos.x,
+          y: cameraPos.y - pos.y,
+          z: cameraPos.z - pos.z,
+        };
+        // 将屏幕坐标转化成世界坐标
         // 转化成世界坐标，存储
         document.body.removeEventListener('mousemove', mouseMoveHandle)
         document.body.removeEventListener('mouseup', mouseUpHandle)
@@ -433,11 +451,16 @@ export default {
       console.log('width:', width, 'height:', height);
       // const sceneCenter = this.cameraPos;
     },
+    // 世界坐标->屏幕坐标
+    // 拖拽热点，相机位置？
+    // 拖动相机位置，屏幕坐标？
     worldVector2Screen(center) {
       // 相对于相机的位置（{x:0,y:0,z:0.1}）
-      const cameraPos = this.camera.position;
-
-      const worldVector = new THREE.Vector3(center.x, center.y, center.z);
+      // const cameraPos = this.camera.position;
+      const worldVector = new THREE.Vector3(
+          center.x,
+          center.y,
+          center.z);
       const stdVector = worldVector.project(this.camera);
       console.log('stdVector:', stdVector);
       const a = this.container.clientWidth / 2;
@@ -445,48 +468,36 @@ export default {
 
       console.log('a:', a, 'b:', b)
       const x = Math.round(stdVector.x * a + a);
-      const y = Math.round(stdVector.y * b + b);
+      const y = Math.round(-stdVector.y * b + b);
 
-      console.log('this.camera.position', cameraPos);
-
-      const worldVector1 = new THREE.Vector3(
-          Number((cameraPos.x).toFixed(16)),
-          Number((cameraPos.y).toFixed(16)),
-          Number((cameraPos.z).toFixed(16)));
-      const stdVector1 = worldVector1.project(this.camera);
-      console.log('stdVector1', stdVector1)
-      const x1 = Math.round(stdVector1.x * a + a);
-      const y1 = Math.round(stdVector1.y * b + b);
-
-      console.log('x:', x, 'y:', y)
-      console.log('x1:', x1, 'y1:', y1)
+      console.log('worldVector2Screen---x-y:', x, y)
       return {x, y}
     },
-
-    // transformStyle(point) {
-    //   const pos = this.worldVector2Screen(point);
-    //   return {
-    //     transform: `translate(${pos.x}px,${pos.y}px) translate(-40px,-40px)`
-    //   }
-    // },
+    // 屏幕坐标转世界坐标(与最开始的camera.position)计算出来的
+    screenVector2World(point) {
+      console.log('point', point);
+      const x = (point.x / this.container.clientWidth) * 2 - 1;
+      const y = -(point.y / this.container.clientHeight) * 2 + 1;
+      const stdVector = new THREE.Vector3(x, y, 0.5);
+      const worldVector = stdVector.unproject(this.camera);
+      console.log('worldVector', worldVector)
+      return worldVector
+    },
   },
   mounted() {
     this.activeName = this.$route.name;
     this.$nextTick(async () => {
       const {scene, camera, controls, renderer} = await this.init();
 
-      // const poiObjects = this.renderHotPoints(scene)
-
+      // const _this = this;
       function changeHandle() {
         renderer.render(scene, camera);
-        console.log('camera.position', camera.position)
-
-        // console.log('poiObjects', poiObjects, camera)
-        // poiObjects[0].scale.set(0.2, 0.2, 0.2)
+        //  相机位置改变，
+        // console.log('position', camera.position)
+        // _this.worldVector2Screen(camera.position)
       }
 
       controls.addEventListener('change', changeHandle);
-
 
       this.createThumbnail();
     })
