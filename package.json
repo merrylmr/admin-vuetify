@@ -14,6 +14,7 @@
     "echarts": "^5.1.2",
     "html2canvas": "^1.3.3",
     "iview": "^3.5.4",
+    "jspreadsheet-ce": "^4.9.7",
     "lodash": "^4.17.21",
     "scroll-anchor": "^1.0.3",
     "swiper": "5.x",

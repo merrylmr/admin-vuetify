@@ -85,6 +85,11 @@ const routes = [
         ]
     },
     {
+        path: '/sheet',
+        component: () => import ('@/views/plugin/Sheet.vue'),
+        name: 'sheet',
+    },
+    {
         path: '/calendar',
         component: () => import ('@/views/comps/calendar/Index.vue'),
         name: 'calendar',
