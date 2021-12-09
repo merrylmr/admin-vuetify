@@ -1,7 +1,8 @@
 <template>
   <div class="sheet">
     <div class="custom-toolbar">
-      <div class="toolbar-item">
+      <div class="toolbar-item"
+           @click="setTableDataHandle">
         <v-icon v-text="'mdi-apps'"></v-icon>
         <span>数据</span>
       </div>
@@ -20,9 +21,32 @@
       </v-col>
       <v-col cols="6">
         <v-btn small>函数</v-btn>
+        <v-btn small
+               @click="changeHeaderTypeHandle">表头类型
+        </v-btn>
       </v-col>
     </v-row>
     <div id="spreadsheet"></div>
+    <v-dialog
+        v-model="dialog"
+        width="500">
+      <v-card>
+        <!-- 选中了头部显示在头部的右侧 popover弹窗-->
+        <div class="types">
+          <div class="type-wrapper">
+            <v-list flat>
+              <v-list-item-group>
+                <v-list-item
+                    v-for="(item,index) in  columnTypes"
+                    :key="index"
+                    @click="changeColumnType(item)">{{ item.label }}
+                </v-list-item>
+              </v-list-item-group>
+            </v-list>
+          </div>
+        </div>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -39,19 +63,97 @@ export default {
     return {
       cell: {
         name: '',
-        value: ''
+        value: '',
+        index: 0
       },
-      table: null
+      table: null,
+      fakeData: {
+        data: [
+          {
+            name: '张三1',
+            mobile: '18381306244',
+            idCard: '510902199511111111',
+            job: '工作',
+            gender: '男'
+          },
+          {
+            name: '张三2',
+            mobile: '18381306244',
+            idCard: '510902199511111111',
+            job: '工作',
+            gender: '女'
+          }
+        ],
+        totalNum: 0
+      },
+      dialog: false,
+      columnTypes: [
+        {
+          label: '单选',
+          value: 'radio'
+        },
+        {
+          label: '复选',
+          value: 'checkbox'
+        },
+        {
+          label: '数字',
+          value: 'numeric'
+        },
+        {
+          label: '日期',
+          value: 'calendar'
+        },
+        {
+          label: '下拉框',
+          value: 'dropdown'
+        }
+      ]
     }
   },
   methods: {
+    // 改变头部类型
+    changeColumnType(item) {
+      console.log('changeColumnType', item, this.cell.index);
+      this.table.options.columns[this.cell.index].type = item.value;
+      this.dialog = false;
+    },
+    changeHeaderTypeHandle() {
+      this.table.options.columns[4] = {
+        source: ['男', '女'],
+        width: 100,
+        type: 'dropdown',
+      }
+    },
+    // 给表单回填数据
+    setTableDataHandle() {
+      let columns = [];
+      let data = []
+      this.fakeData.data.forEach((item, index) => {
+        let itemValue = []
+        if (index === 0) {
+          for (let key in item) {
+            // 第一行的数据（默认未表头）
+            columns.push(key)
+            itemValue.push(item[key])
+          }
+          data.push(columns)
+        } else {
+          for (let key in item) {
+            itemValue.push(item[key])
+          }
+        }
+        data.push(itemValue)
+      })
+      console.log('data', data)
+      this.table.setData(data);
+    },
     // 回显到表单对应的单元格
     changeHandle() {
       this.table.setValue(this.cell.name, this.cell.value)
     },
     init() {
       const _this = this;
-
 
       function selectionActive(instance, x1, y1, x2, y2, origin) {
         console.log('instance, x1, y1, x2, y2, origin', instance, x1, y1, x2, y2, origin)
@@ -61,82 +163,21 @@ export default {
         console.log('value:', value)
         _this.cell.name = cellName1;
         _this.cell.value = value;
+        _this.cell.index = x1
+        //  TODO:如果是表头字段，显示设置表头类型
+        // const tableData = _this.table.getJson();
+        // console.log('tableData:', tableData)
       }
 
       this.table = jspreadsheet(document.getElementById('spreadsheet'), {
-        data: [[]],
-        minDimensions: [26, 10],
-        // toolbar: [
-        //   {
-        //     type: 'i',
-        //     content: 'undo',
-        //     onclick: function () {
-        //       table.undo();
-        //     }
-        //   },
-        //   {
-        //     type: 'i',
-        //     content: 'redo',
-        //     onclick: function () {
-        //       table.redo();
-        //     }
-        //   },
-        //   {
-        //     type: 'i',
-        //     content: 'save',
-        //     onclick: function () {
-        //       table.download();
-        //     }
-        //   },
-        //   {
-        //     type: 'select',
-        //     k: 'font-family',
-        //     v: ['Arial', 'Verdana']
-        //   },
-        //   {
-        //     type: 'select',
-        //     k: 'font-size',
-        //     v: ['9px', '10px', '11px', '12px', '13px', '14px', '15px', '16px', '17px', '18px', '19px', '20px']
-        //   },
-        //   {
-        //     type: 'i',
-        //     content: 'format_align_left',
-        //     k: 'text-align',
-        //     v: 'left'
-        //   },
-        //   {
-        //     type: 'i',
-        //     content: 'format_align_center',
-        //     k: 'text-align',
-        //     v: 'center'
-        //   },
-        //   {
-        //     type: 'i',
-        //     content: 'format_align_right',
-        //     k: 'text-align',
-        //     v: 'right'
-        //   },
-        //   {
-        //     type: 'i',
-        //     content: 'format_bold',
-        //     k: 'font-weight',
-        //     v: 'bold'
-        //   },
-        //   {
-        //     type: 'color',
-        //     content: 'format_color_text',
-        //     k: 'color'
-        //   },
-        //   {
-        //     type: 'color',
-        //     content: 'format_color_fill',
-        //     k: 'background-color'
-        //   },
-        // ],
+        data: [],
+        minDimensions: [27, 100],
+        columns: [],
         columnSorting: false,
         defaultColWidth: 100,
         allowExport: false,
-        // fullscreen: true,
+        tableWidth: '100vw',
+        tableOverflow: true,
         contextMenu: function (obj, x, y) {
           // 这两个组合可以实现合并单元格
           let items = [
@@ -268,12 +309,24 @@ export default {
       console.log('inRangeMerge', inRangeMerge)
       return inRangeMerge
     },
+    sheetClickEvent() {
+      const dom = document.getElementById('spreadsheet');
+      dom.addEventListener('click', (e) => {
+        const className = Array.from(e.target.classList);
+        console.log('e', e.target, className)
+
+        if (className.includes('selected')) {
+          // 位置偏差（点到箭头位置才显示弹窗）
+          this.dialog = true;
+        }
+      })
+    },
   },
   mounted() {
     this.$nextTick(() => {
       this.init();
+      this.sheetClickEvent();
     })
-
   }
 }
 </script>
@@ -289,5 +342,28 @@ export default {
 .toolbar-item {
   padding: 10px 10px;
   cursor: pointer;
+}
+
+.type-item {
+  padding: 10px;
+  cursor: pointer;
+}
+
+</style>
+
+<style lang="scss">
+thead {
+  td {
+    &.selected {
+      &::after {
+        content: '▼';
+        position: absolute;
+        right: 2px;
+        top: 50%;
+        transform: translate(0, -50%);
+        color: #999;
+      }
+    }
+  }
 }
 </style>
