@@ -2,7 +2,7 @@
   <div class="editor-3d">
     <div class="header">
       <div class="header-wrapper">
-        <div class="sub-title">作品标题</div>
+        <div class="sub-title">{{ doc.name }}</div>
         <div class="right">
           <v-btn class="ma-2" small outlined color="success">保存</v-btn>
           <v-btn class="ma-2" small outlined color="indigo"
@@ -28,28 +28,43 @@
         </ul>
       </div>
       <div class="stage">
-        <div class="view-area"
-             id="container">
+        <div class="wrapper">
+          <div class="view-area"
+               id="container">
+          </div>
+          <div class="help-frame"
+               v-if="$route.name==='view'">
+            <v-btn
+                class="btn"
+                color="primary"
+                small
+                @click="setCameraPosHandle">把当前视觉设置为初始视角
+            </v-btn>
+          </div>
+          <!--热点列表-->
+          <div class="hotSpot-list"
+               v-if="$route.name==='hot' && !isLoading">
+            <div class="hotStop-item"
+                 @mousedown="pointMoveStartHandle($event,item)"
+                 v-for="(item,index) in hotSpots"
+                 :style="transformStyle(item.pos)"
+                 :key="index">
+              <img :src="item.iconPath">
+            </div>
+          </div>
         </div>
-
-        <div class="help-frame"
-             v-if="$route.name==='view'">
-          <v-btn
-              class="btn"
-              color="primary"
-              small
-              @click="setCameraPosHandle">把当前视觉设置为初始视角
-          </v-btn>
-        </div>
-        <!--热点列表-->
-        <div class="hotSpot-list"
-             v-if="$route.name==='hot' && !isLoading">
-          <div class="hotStop-item"
-               @mousedown="pointMoveStartHandle($event,item)"
-               v-for="(item,index) in hotSpots"
-               :style="transformStyle(item.pos)"
-               :key="index">
-            <img :src="item.iconPath">
+        <!--  场景列表  -->
+        <div class="scene-list">
+          <div class="scene-item"
+               v-for="(item,index) in doc.scenes"
+               :key="index"
+               :class="{'is-active':index===activeIndex}"
+               @click="changeItemHandle(index)">
+            <img :src="item.url" alt="">
+          </div>
+          <div class="scene-item plus">
+            <v-icon v-text="'mdi-plus'"></v-icon>
+            <div>添加场景</div>
           </div>
         </div>
       </div>
@@ -184,6 +199,8 @@ export default {
         minAzimuthAngle: -180,
         maxAzimuthAngle: 180,
       },
+      scene: null,
+      renderer: null,
       camera: null,
       container: null,
       cameraPos: {
@@ -221,7 +238,45 @@ export default {
           }
         }
       ],
-      isLoading: true
+      isLoading: true,
+
+      doc: {
+        name: '作品标题A',
+        scenes: [
+          {
+            url: '3d/images/scene.jpeg',
+            params: {},
+            hotSpots: [],
+            cameraPos: {
+              x: 0,
+              y: 0,
+              z: 0.1
+            }
+          },
+          {
+            url: '3d/images/scene1.jpeg',
+            params: {},
+            hotSpots: [],
+            cameraPos: {
+              x: -4.873413451526259e-8,
+              y: -0.09999999999995005,
+              z: 8.732624540095245e-8
+            }
+          },
+          {
+            url: '3d/images/scene2.jpeg',
+            params: {},
+            hotSpots: [],
+            cameraPos: {
+              x: 0,
+              y: 0,
+              z: 0.1
+            }
+          }
+        ]
+      },
+      // 当前编辑item的索引值
+      activeIndex: 0
     }
   },
   components: {PreviewDlg, HotSpot},
@@ -239,6 +294,9 @@ export default {
         }
       }
 
+    },
+    activeItem() {
+      return this.doc.scenes[this.activeIndex]
     }
   },
   methods: {
@@ -299,7 +357,7 @@ export default {
         })
       }
 
-      await renderModel('3d/images/scene.jpeg');
+      await renderModel(this.activeItem.url);
       render();
       this.isLoading = false;
 
@@ -371,6 +429,7 @@ export default {
     },
     // 设置当前视觉
     setCameraPosHandle() {
+      this.doc.scenes[this.activeIndex].cameraPos = this.camera.position;
       this.cameraPos = this.camera.position;
       // this.camera.updateProjectionMatrix();
       // console.log('this.camera', this.camera);
@@ -483,11 +542,38 @@ export default {
       console.log('worldVector', worldVector)
       return worldVector
     },
+    changeItemHandle(index) {
+      this.activeIndex = index;
+      // TODO:当前的场景重新渲染 + 生成缩略图
+      const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
+      sphereGeometry.scale(1, 1, -1);
+
+      const texture = new THREE.TextureLoader().load(this.activeItem.url, () => {
+        const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
+        const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        this.scene.add(sphere);
+
+        const cameraPos = this.activeItem.cameraPos;
+        console.log('this.activeItem.cameraPos', cameraPos, this.doc.scenes)
+
+        console.log('cameraPos position:', cameraPos)
+
+        const width = this.container.clientWidth;
+        const height = this.container.clientHeight;
+        const camera = new THREE.PerspectiveCamera(90, width / height, this.params.near, this.params.far);
+        camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
+
+        this.camera = camera
+        this.renderer.render(this.scene, this.camera)
+      });
+    }
   },
   mounted() {
     this.activeName = this.$route.name;
     this.$nextTick(async () => {
       const {scene, camera, controls, renderer} = await this.init();
+      this.scene = scene;
+      this.renderer = renderer;
 
       // const _this = this;
       function changeHandle() {
@@ -564,6 +650,8 @@ export default {
     height: 100%;
     //padding: 20px;
     position: relative;
+    @include flex();
+    flex-direction: column;
 
     .view-area {
       width: 100%;
@@ -610,6 +698,45 @@ export default {
       height: 80px;
       transform-origin: 50% 50%;
       pointer-events: auto;
+    }
+  }
+
+  .wrapper {
+    flex: auto;
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  .scene-list {
+    width: 100%;
+    height: 100px;
+    @include flex();
+
+    .scene-item {
+      width: 80px;
+      height: 80px;
+      border: 1px solid #eee;
+      border-radius: 3px;
+      margin-top: 10px;
+      margin-right: 10px;
+
+      &.is-active {
+        border: 2px solid $--color-primary;
+      }
+
+
+      &.plus {
+        @include flex(center, center);
+        flex-direction: column;
+        cursor: pointer;
+      }
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
     }
   }
 
