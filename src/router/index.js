@@ -82,6 +82,11 @@ const routes = [
                 component: () => import ('@/views/note/Index.vue'),
                 name: 'noteList',
             },
+            {
+                    path: '/wordCould',
+                component: () => import ('@/views/plugin/WordCould.vue'),
+                name: 'wordCould',
+            },
         ]
     },
     {
