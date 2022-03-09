@@ -183,6 +183,10 @@ import HotSpot from './comps/HotSpot.vue'
 // 第一步：实现可以拖拽
 // 第二步：位置坐标转化，随着鼠标的滚动、拖拽
 // 第三步： camera旋转时候， 位置改变（世界坐标系转屏幕坐标系）
+
+
+// TODO: 目标：实现类似贝壳的3D看房效果
+// 每个场景：拥有自身的热点信息 初始角度
 export default {
   name: 'editor-3d',
   data() {
@@ -251,7 +255,8 @@ export default {
               x: 0,
               y: 0,
               z: 0.1
-            }
+            },
+            shape: null
           },
           {
             url: '3d/images/scene1.jpeg',
@@ -261,7 +266,8 @@ export default {
               x: -4.873413451526259e-8,
               y: -0.09999999999995005,
               z: 8.732624540095245e-8
-            }
+            },
+            shape: null
           },
           {
             url: '3d/images/scene2.jpeg',
@@ -271,12 +277,14 @@ export default {
               x: 0,
               y: 0,
               z: 0.1
-            }
+            },
+            shape: null
           }
         ]
       },
       // 当前编辑item的索引值
-      activeIndex: 0
+      activeIndex: 0,
+      controls: null
     }
   },
   components: {PreviewDlg, HotSpot},
@@ -352,12 +360,13 @@ export default {
             const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
             const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
             scene.add(sphere)
-            resolve();
+            resolve(sphere);
           });
         })
       }
 
-      await renderModel(this.activeItem.url);
+      const shape = await renderModel(this.activeItem.url);
+      this.activeItem.shape = shape;
       render();
       this.isLoading = false;
 
@@ -521,7 +530,7 @@ export default {
           center.y,
           center.z);
       const stdVector = worldVector.project(this.camera);
-      console.log('stdVector:', stdVector);
+      // console.log('stdVector:', stdVector);
       const a = this.container.clientWidth / 2;
       const b = this.container.clientHeight / 2;
 
@@ -543,6 +552,12 @@ export default {
       return worldVector
     },
     changeItemHandle(index) {
+      console.log('changeItemHandle1111', this.scene.children)
+      if (this.activeItem.shape) {
+        // important:减少占用缓存
+        this.scene.remove(this.activeItem.shape)
+      }
+
       this.activeIndex = index;
       // TODO:当前的场景重新渲染 + 生成缩略图
       const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
@@ -553,17 +568,14 @@ export default {
         const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
         this.scene.add(sphere);
 
+        this.activeItem.shape = sphere;
+
         const cameraPos = this.activeItem.cameraPos;
-        console.log('this.activeItem.cameraPos', cameraPos, this.doc.scenes)
+        // 相机位置
+        this.camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
+        // important:通过参数更新相机位置，必须调用controls的update才会生效
+        this.controls.update();
 
-        console.log('cameraPos position:', cameraPos)
-
-        const width = this.container.clientWidth;
-        const height = this.container.clientHeight;
-        const camera = new THREE.PerspectiveCamera(90, width / height, this.params.near, this.params.far);
-        camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
-
-        this.camera = camera
         this.renderer.render(this.scene, this.camera)
       });
     }
@@ -574,13 +586,15 @@ export default {
       const {scene, camera, controls, renderer} = await this.init();
       this.scene = scene;
       this.renderer = renderer;
+      this.controls = controls;
 
       // const _this = this;
-      function changeHandle() {
+      const changeHandle = () => {
         renderer.render(scene, camera);
         //  相机位置改变，
-        // console.log('position', camera.position)
+        console.log('position', camera.position)
         // _this.worldVector2Screen(camera.position)
+        this.activeItem.cameraPos = this._.cloneDeep(camera.position)
       }
 
       controls.addEventListener('change', changeHandle);
