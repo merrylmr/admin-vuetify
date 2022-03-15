@@ -35,14 +35,22 @@
 
 
             <!-- 系统图表列表-->
-            <div class="sys-icon-list">
+            <div class="sys-icon-list"
+                 v-show="form.iconType==='sys'">
               <div class="icon-item"
                    v-for="(item,index) in sysIcons"
                    :class="{'is-active':form.iconPath===item.key}"
-                   :key="index">
+                   :key="index"
+                   @click="changeIconHandle(item)">
                 <img :src="item.url">
               </div>
             </div>
+            <v-text-field
+                v-show="form.iconType==='custom'"
+                label="图标地址"
+                v-model="form.iconPath"
+                placeholder="请输入图标链接">
+            </v-text-field>
             <v-subheader>图标大小</v-subheader>
             <v-slider
                 thumb-label="always"
@@ -130,6 +138,19 @@ export default {
         params: {}
       }
     }
+  },
+  props: {
+    list: {
+      type: Array,
+      default: () => {
+        return []
+      }
+    }
+  },
+  methods: {
+    changeIconHandle(item) {
+      this.form.iconPath = item.key
+    }
   }
 }
 </script>
@@ -152,9 +173,10 @@ export default {
   height: 35px;
   margin: 0 2px 15px;
   cursor: pointer;
+  border-radius: 2px;
 
   &.is-active {
-    border: 1px solid #5e35b1;
+    border: 2px solid #5e35b1;
   }
 
   img {

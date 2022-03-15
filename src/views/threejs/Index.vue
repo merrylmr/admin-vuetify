@@ -45,6 +45,7 @@
           <div class="hotSpot-list"
                v-if="$route.name==='hot' && !isLoading">
             <div class="hotStop-item"
+                 @click="clickPointHandle(item)"
                  @mousedown="pointMoveStartHandle($event,item)"
                  v-for="(item,index) in hotSpots"
                  :style="transformStyle(item.pos)"
@@ -157,7 +158,9 @@
           </div>
         </div>
         <div v-else-if="$route.name==='hot'">
-          <HotSpot></HotSpot>
+          <HotSpot
+              :list="hotSpots">
+          </HotSpot>
         </div>
       </div>
     </div>
@@ -232,16 +235,16 @@ export default {
       ],
       activeName: 'view',
       // 热点列表
-      hotSpots: [
-        {
-          iconPath: 'img/new_spotd1_gif.png',
-          pos: {
-            x: 0,
-            y: 0,
-            z: 0.1
-          }
-        }
-      ],
+      // hotSpots: [
+      //   {
+      //     iconPath: 'img/new_spotd1_gif.png',
+      //     pos: {
+      //       x: 0,
+      //       y: 0,
+      //       z: 0.1
+      //     }
+      //   }
+      // ],
       isLoading: true,
 
       doc: {
@@ -250,18 +253,41 @@ export default {
           {
             url: '3d/images/scene.jpeg',
             params: {},
-            hotSpots: [],
+            hotSpots: [
+              {
+                iconType: 'sys',
+                iconSize: 10,
+                iconPath: 'img/new_spotd1_gif.png',
+                pos: {
+                  x: 0,
+                  y: 0,
+                  z: 0.1
+                }
+              }
+            ],
             cameraPos: {
               x: 0,
               y: 0,
               z: 0.1
             },
-            shape: null
+            shape: null,
+
           },
           {
             url: '3d/images/scene1.jpeg',
             params: {},
-            hotSpots: [],
+            hotSpots: [
+              {
+                iconType: 'sys',
+                iconSize: 10,
+                iconPath: 'img/new_spotd1_gif.png',
+                pos: {
+                  x: -4.873413451526259e-8,
+                  y: -0.09999999999995005,
+                  z: 8.732624540095245e-8
+                }
+              }
+            ],
             cameraPos: {
               x: -4.873413451526259e-8,
               y: -0.09999999999995005,
@@ -305,6 +331,10 @@ export default {
     },
     activeItem() {
       return this.doc.scenes[this.activeIndex]
+    },
+    // 当前编辑场景的热点列表
+    hotSpots() {
+      return this.doc.scenes[this.activeIndex].hotSpots
     }
   },
   methods: {
@@ -578,6 +608,9 @@ export default {
 
         this.renderer.render(this.scene, this.camera)
       });
+    },
+    clickPointHandle(item) {
+      this.activePoint = item;
     }
   },
   mounted() {
