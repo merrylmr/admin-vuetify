@@ -1,7 +1,7 @@
 <template>
   <div>
     <v-btn class="ma-2" tile color="indigo" dark
-           @click="drawer=!drawer">添加热点
+           @click="addPointHandle">添加热点
     </v-btn>
     <v-divider></v-divider>
     <!-- 当前场景热点 -->
@@ -39,7 +39,7 @@
                  v-show="form.iconType==='sys'">
               <div class="icon-item"
                    v-for="(item,index) in sysIcons"
-                   :class="{'is-active':form.iconPath===item.key}"
+                   :class="{'is-active':form.iconPath===item.url}"
                    :key="index"
                    @click="changeIconHandle(item)">
                 <img :src="item.url">
@@ -76,6 +76,7 @@
 </template>
 
 <script>
+import {randomString} from '@/assets/js/utils.js'
 export default {
   name: 'hot-spot',
   data() {
@@ -132,10 +133,14 @@ export default {
         }],
       form: {
         iconType: 'sys',
-        iconPath: 'forward',
+        iconPath: 'img/new_spotd1_gif.png',
         iconSize: 10,
         hotType: 'scene',
-        params: {}
+        pos: {
+          x: 0,
+          y: 0,
+          z: 0.1
+        }
       }
     }
   },
@@ -145,11 +150,43 @@ export default {
       default: () => {
         return []
       }
+    },
+    activePoint: {
+      type: Object,
+      default: () => {
+        return {}
+      }
     }
   },
   methods: {
     changeIconHandle(item) {
       this.form.iconPath = item.key
+    },
+    addPointHandle() {
+      this.drawer = true;
+      this.form = {
+        id: randomString(),
+        iconType: 'sys',
+        iconPath: 'img/new_spotd1_gif.png',
+        iconSize: 10,
+        hotType: 'scene',
+        pos: {
+          x: 0,
+          y: 0,
+          z: 0.1
+        }
+      }
+      this.$emit('addPoint', this.form)
+    }
+  },
+  watch: {
+    activePoint(n) {
+      console.log('activePoint watch:', n)
+
+      this.form = this._.merge(this.form, this._.cloneDeep(n))
+      if (n) {
+        this.drawer = true;
+      }
     }
   }
 }

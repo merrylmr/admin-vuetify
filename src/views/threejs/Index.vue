@@ -45,7 +45,8 @@
           <div class="hotSpot-list"
                v-if="$route.name==='hot' && !isLoading">
             <div class="hotStop-item"
-                 @click="clickPointHandle(item)"
+                 :class="{'is-active':item.id===_.get(activePoint,'id')}"
+                 @click.stop="clickPointHandle(item)"
                  @mousedown="pointMoveStartHandle($event,item)"
                  v-for="(item,index) in hotSpots"
                  :style="transformStyle(item.pos)"
@@ -159,7 +160,9 @@
         </div>
         <div v-else-if="$route.name==='hot'">
           <HotSpot
-              :list="hotSpots">
+              :list="hotSpots"
+              :activePoint="activePoint"
+              @addPoint="addPointHandle">
           </HotSpot>
         </div>
       </div>
@@ -181,6 +184,7 @@ import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
 import PreviewDlg from './comps/Preview.vue'
 import html2canvas from "html2canvas";
 import HotSpot from './comps/HotSpot.vue'
+import {ICON_MAP} from '@/assets/js/const.js'
 // TODO: 水平和垂直的角度需要再修改修改
 // 热点：
 // 第一步：实现可以拖拽
@@ -194,6 +198,7 @@ export default {
   name: 'editor-3d',
   data() {
     return {
+      ICON_MAP,
       // 相机参数
       params: {
         near: 0.1,
@@ -255,9 +260,11 @@ export default {
             params: {},
             hotSpots: [
               {
+                id: '1',
                 iconType: 'sys',
                 iconSize: 10,
                 iconPath: 'img/new_spotd1_gif.png',
+                hotType: 'scene',
                 pos: {
                   x: 0,
                   y: 0,
@@ -278,9 +285,11 @@ export default {
             params: {},
             hotSpots: [
               {
+                id: 'b1',
                 iconType: 'sys',
                 iconSize: 10,
-                iconPath: 'img/new_spotd1_gif.png',
+                iconPath: 'img/new_spotd2_gif.png',
+                hotType: 'link',
                 pos: {
                   x: -4.873413451526259e-8,
                   y: -0.09999999999995005,
@@ -310,7 +319,8 @@ export default {
       },
       // 当前编辑item的索引值
       activeIndex: 0,
-      controls: null
+      controls: null,
+      activePoint: {}
     }
   },
   components: {PreviewDlg, HotSpot},
@@ -338,6 +348,11 @@ export default {
     }
   },
   methods: {
+    addPointHandle(data) {
+      const point = this._.cloneDeep(data);
+      this.doc.scenes[this.activeIndex].hotSpots.push(point);
+      this.activePoint = point
+    },
     createThumbnail() {
       if (this.$route.name !== 'view') return
       console.log('this.$route.name', this.$route.name);
@@ -611,6 +626,7 @@ export default {
     },
     clickPointHandle(item) {
       this.activePoint = item;
+
     }
   },
   mounted() {
@@ -738,13 +754,18 @@ export default {
 
     .hotStop-item {
       position: absolute;
-      border: 3px solid orange;
+
       border-radius: 5px;
       cursor: pointer;
       width: 80px;
       height: 80px;
       transform-origin: 50% 50%;
       pointer-events: auto;
+      background-color: rgba(0, 0, 0, 0.1);
+
+      &.is-active {
+        border: 3px solid orange;
+      }
     }
   }
 
