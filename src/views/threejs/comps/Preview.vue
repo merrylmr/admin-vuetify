@@ -30,6 +30,14 @@ export default {
     },
     params: {
       type: Object
+    },
+    doc: {
+      type: Object,
+      default: () => {
+        return {
+          scenes: []
+        }
+      }
     }
   },
   methods: {
@@ -37,43 +45,53 @@ export default {
       console.log('closeHandle');
       this.$emit('close')
     },
-    init() {
+    // 角度转弧度
+    degToRad(deg) {
+      return Math.PI / 180 * deg
+    },
+    async renderScene(data) {
       const container = document.getElementById('preview');
       const width = container.clientWidth;
       const height = container.clientHeight;
+
       const renderer = new THREE.WebGLRenderer();
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(width, height)
       container.appendChild(renderer.domElement)
 
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(this.params.fov, width / height, this.params.near, this.params.far);
-      camera.position.x = this.cameraPos.x;
-      camera.position.y = this.cameraPos.y;
-      camera.position.z = this.cameraPos.z;
-      // camera.position.z = 0.01;
+      const camera = new THREE.PerspectiveCamera(data.params.fov, width / height, data.params.near, data.params.far);
+      camera.position.x = data.cameraPos.x;
+      camera.position.y = data.cameraPos.y;
+      camera.position.z = data.cameraPos.z;
+
       this.camera = camera;
+      this.scene = scene;
+
+
       const controls = new OrbitControls(camera, renderer.domElement);
-
-      controls.minPolarAngle = this.degToRad(this.params.minPolarAngle)
-      controls.maxPolarAngle = this.degToRad(this.params.maxPolarAngle)
-
-      controls.minAzimuthAngle = this.degToRad(this.params.minAzimuthAngle);
-      controls.maxAzimuthAngle = this.degToRad(this.params.maxAzimuthAngle);
-
+      // controls.minPolarAngle = this.degToRad(data.params.minPolarAngle)
+      // controls.maxPolarAngle = this.degToRad(data.params.maxPolarAngle)
+      //
+      // controls.minAzimuthAngle = this.degToRad(data.params.minAzimuthAngle);
+      // controls.maxAzimuthAngle = this.degToRad(data.params.maxAzimuthAngle);
 
       function renderModel(url) {
-        const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
-        sphereGeometry.scale(1, 1, -1);
-        const texture = new THREE.TextureLoader().load(url, () => {
-          const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
-          const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-          scene.add(sphere)
-          render();
-        });
+        return new Promise((resolve) => {
+          const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
+          sphereGeometry.scale(1, 1, -1);
+          const texture = new THREE.TextureLoader().load(url, () => {
+            const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
+            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            scene.add(sphere)
+            // render();
+            resolve()
+          });
+        })
+
       }
 
-      renderModel('3d/images/scene.jpeg');
+      await renderModel(data.url);
 
       function render() {
         renderer.render(scene, camera);
@@ -81,11 +99,55 @@ export default {
       }
 
       controls.addEventListener('change', render);
+
+      return {renderer, controls, camera, scene}
     },
-    // 角度转弧度
-    degToRad(deg) {
-      return Math.PI / 180 * deg
+
+    textureLoaderHandle(url) {
+      return new Promise((resolve) => {
+        const pointTexture = new THREE.TextureLoader().load(url, () => {
+          resolve(pointTexture)
+        });
+      })
     },
+    // 渲染热点
+    async renderPoint(scene, hotPoints) {
+      let poiObjects = [];
+      for (let i = 0; i < hotPoints.length; i++) {
+        const item = hotPoints[i];
+        // 这里加载是一个异步的过程
+        const pointTexture = await this.textureLoaderHandle(item.iconPath)
+        console.log('pointTexture:', pointTexture)
+        const material = new THREE.SpriteMaterial({map: pointTexture});
+        const sprite = new THREE.Sprite(material);
+
+        sprite.scale.set(0.1, 0.1, 0.1);
+        const position = hotPoints[i].pos
+        sprite.position.set(position.x, position.y, position.z)
+
+        scene.add(sprite);
+
+        sprite.detail = hotPoints[i].detail;
+        poiObjects.push(sprite);
+      }
+
+      return poiObjects
+    },
+    async init() {
+      const data = this.doc.scenes[0]
+      const points = data.hotSpots
+      // 渲染场景
+      const {renderer, controls, scene, camera} = await this.renderScene(data)
+      // 渲染热点
+      await this.renderPoint(scene, points)
+
+      function render() {
+        renderer.render(scene, camera);
+      }
+
+      render();
+      controls.addEventListener('change', render);
+    }
   },
   mounted() {
     this.$nextTick(() => {

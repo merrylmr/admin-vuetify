@@ -9,18 +9,29 @@
 
     </div>
 
+
     <v-navigation-drawer
+        transition="slide-x-reverse-transition"
+        v-if="drawer"
         v-model="drawer"
         height="100vh"
         :right="true"
         :hide-overlay="true"
         absolute
-        temporary>
+
+        @input="toggleDrawerHandle"
+    >
       <div class="pa-4">
         <div class="header">
-          <div class="header-title">添加热点</div>
+          <div class="header-title"
+          >添加热点
+          </div>
           <div class="header-close">
-            <!--          <v-icon v-text="dmi-"></v-icon>-->
+            <v-btn
+                small
+                text
+                @click="closeDrawHandle">关闭
+            </v-btn>
           </div>
         </div>
         <div class="body">
@@ -68,20 +79,45 @@
                 label="热点类型">
             </v-select>
 
+            <div>
+              选择目标全景{{ form.value }}
+              <v-btn color="primary"
+                     @click="isShowSceneDlg=true">选择场景
+              </v-btn>
+              <div class="selected-scene"
+                   v-if="selectedScene.id">
+                <div class="selected-scene__img">
+                  <img :src="selectedScene.url" alt="">
+                </div>
+                <div class="selected-scene__name">
+                  {{ selectedScene.name }}
+                </div>
+              </div>
+            </div>
+
           </v-form>
         </div>
       </div>
     </v-navigation-drawer>
+    <SceneDlg
+        v-if="isShowSceneDlg"
+        :visible="isShowSceneDlg"
+        :doc="doc"
+        :scene-id="form.value"
+        @close="isShowSceneDlg=false"
+        @sure="sureHandle">
+    </SceneDlg>
   </div>
 </template>
 
 <script>
 import {randomString} from '@/assets/js/utils.js'
+import SceneDlg from './Scene.vue'
 export default {
   name: 'hot-spot',
   data() {
     return {
-      drawer: true,
+      drawer: false,
       items: [
         {
           label: '系统图标',
@@ -136,14 +172,17 @@ export default {
         iconPath: 'img/new_spotd1_gif.png',
         iconSize: 10,
         hotType: 'scene',
+        value: '',
         pos: {
           x: 0,
           y: 0,
           z: 0.1
         }
-      }
+      },
+      isShowSceneDlg: false
     }
   },
+  components: {SceneDlg},
   props: {
     list: {
       type: Array,
@@ -156,11 +195,27 @@ export default {
       default: () => {
         return {}
       }
+    },
+    doc: {
+      type: Object,
+      default: () => {
+        return {
+          scenes: []
+        }
+      }
+    }
+  },
+  computed: {
+    selectedScene() {
+      return this.doc.scenes.find(item => {
+        return item.id === this.form.value
+      }) || {}
     }
   },
   methods: {
     changeIconHandle(item) {
-      this.form.iconPath = item.key
+      this.form.iconPath = item.url
+      this.changeHandle()
     },
     addPointHandle() {
       this.drawer = true;
@@ -173,19 +228,36 @@ export default {
         pos: {
           x: 0,
           y: 0,
-          z: 0.1
+          z: -0.2
         }
       }
       this.$emit('addPoint', this.form)
+    },
+    toggleDrawerHandle(v) {
+      console.log('toggleDrawerHandle:', v)
+    },
+    sureHandle(id) {
+      this.form.value = id;
+      this.isShowSceneDlg = false;
+      this.changeHandle();
+    },
+    changeHandle() {
+      this.$emit('change', this.form)
+    },
+    // 取消选中的热点
+    closeDrawHandle() {
+      this.drawer = false;
+      this.$emit('cancel')
     }
   },
   watch: {
     activePoint(n) {
       console.log('activePoint watch:', n)
-
-      this.form = this._.merge(this.form, this._.cloneDeep(n))
-      if (n) {
+      this.form = this._.cloneDeep(n)
+      if (n && n.id) {
         this.drawer = true;
+      } else {
+        this.drawer = false;
       }
     }
   }
@@ -195,6 +267,8 @@ export default {
 
 <style scoped lang="scss">
 .header {
+  @include flex(space-between, center);
+
   &-title {
     font-size: 16px;
   }
@@ -220,6 +294,19 @@ export default {
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+}
+
+.selected-scene {
+  margin-top: 10px;
+  border: 1px solid #eee;
+
+  &__name {
+    padding: 0 10px;
+  }
+
+  img {
+    width: 100%;
   }
 }
 </style>

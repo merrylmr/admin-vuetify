@@ -46,8 +46,7 @@
                v-if="$route.name==='hot' && !isLoading">
             <div class="hotStop-item"
                  :class="{'is-active':item.id===_.get(activePoint,'id')}"
-                 @click.stop="clickPointHandle(item)"
-                 @mousedown="pointMoveStartHandle($event,item)"
+                 @mousedown="pointDownHandle($event,item)"
                  v-for="(item,index) in hotSpots"
                  :style="transformStyle(item.pos)"
                  :key="index">
@@ -61,8 +60,9 @@
                v-for="(item,index) in doc.scenes"
                :key="index"
                :class="{'is-active':index===activeIndex}"
-               @click="changeItemHandle(index)">
+               @click="changeSceneHandle(index)">
             <img :src="item.url" alt="">
+            <div class="scene-item__name">{{ item.name }}</div>
           </div>
           <div class="scene-item plus">
             <v-icon v-text="'mdi-plus'"></v-icon>
@@ -162,7 +162,10 @@
           <HotSpot
               :list="hotSpots"
               :activePoint="activePoint"
-              @addPoint="addPointHandle">
+              :doc="doc"
+              @addPoint="addPointHandle"
+              @change="changePointHandle"
+              @cancel="cancelPointHandle">
           </HotSpot>
         </div>
       </div>
@@ -172,6 +175,7 @@
         :visible="isShowPreviewDlg"
         :params="params"
         :camera-pos="cameraPos"
+        :doc="doc"
         @close="isShowPreviewDlg=false">
     </PreviewDlg>
   </div>
@@ -239,25 +243,26 @@ export default {
         }
       ],
       activeName: 'view',
-      // 热点列表
-      // hotSpots: [
-      //   {
-      //     iconPath: 'img/new_spotd1_gif.png',
-      //     pos: {
-      //       x: 0,
-      //       y: 0,
-      //       z: 0.1
-      //     }
-      //   }
-      // ],
       isLoading: true,
 
       doc: {
         name: '作品标题A',
         scenes: [
           {
+            id: 'xxx1',
+            name: '场景1',
             url: '3d/images/scene.jpeg',
-            params: {},
+            params: {
+              near: 0.1,
+              far: 100,
+              fov: 90,
+              // 最大仰角和俯视角
+              minPolarAngle: -90,
+              maxPolarAngle: 90,
+              // 水平方向视角限制
+              minAzimuthAngle: -180,
+              maxAzimuthAngle: 180,
+            },
             hotSpots: [
               {
                 id: '1',
@@ -268,8 +273,9 @@ export default {
                 pos: {
                   x: 0,
                   y: 0,
-                  z: 0.1
-                }
+                  z: -0.2
+                },
+                value: ''
               }
             ],
             cameraPos: {
@@ -281,8 +287,20 @@ export default {
 
           },
           {
+            id: 'xxx2',
+            name: '场景2',
             url: '3d/images/scene1.jpeg',
-            params: {},
+            params: {
+              near: 0.1,
+              far: 100,
+              fov: 90,
+              // 最大仰角和俯视角
+              minPolarAngle: -90,
+              maxPolarAngle: 90,
+              // 水平方向视角限制
+              minAzimuthAngle: -180,
+              maxAzimuthAngle: 180,
+            },
             hotSpots: [
               {
                 id: 'b1',
@@ -305,8 +323,20 @@ export default {
             shape: null
           },
           {
+            id: 'xxx3',
+            name: '场景3',
             url: '3d/images/scene2.jpeg',
-            params: {},
+            params: {
+              near: 0.1,
+              far: 100,
+              fov: 90,
+              // 最大仰角和俯视角
+              minPolarAngle: -90,
+              maxPolarAngle: 90,
+              // 水平方向视角限制
+              minAzimuthAngle: -180,
+              maxAzimuthAngle: 180,
+            },
             hotSpots: [],
             cameraPos: {
               x: 0,
@@ -320,19 +350,25 @@ export default {
       // 当前编辑item的索引值
       activeIndex: 0,
       controls: null,
-      activePoint: {}
+      activePoint: {},
+      isDragging: false
     }
   },
   components: {PreviewDlg, HotSpot},
   computed: {
     transformStyle() {
       return (point) => {
+        // 相对于当前的相机位置坐标
+        //  现在的问题：在编辑器中，坐标点需要相对相机位置来计算，这样，在旋转、移动画布的时候，才能够跟随移动，否则热点不会移动
+        // 为什么是2*cameraPos? 暂不是很清楚
+        // 但是在真正的预览界面，则无需相对相机；
         const cameraPos = this.camera.position;
         const pos = this.worldVector2Screen({
-          x: cameraPos.x - point.x,
-          y: cameraPos.y - point.y,
-          z: cameraPos.z - point.z
+          x: 2 * cameraPos.x - point.x,
+          y: 2 * cameraPos.y - point.y,
+          z: 2 * cameraPos.z - point.z
         });
+        console.log('transformStyle pos:', pos)
         return {
           transform: `translateZ(0px) translate(${pos.x}px,${pos.y}px) translate(-40px,-40px)`
         }
@@ -353,6 +389,15 @@ export default {
       this.doc.scenes[this.activeIndex].hotSpots.push(point);
       this.activePoint = point
     },
+    changePointHandle(data) {
+      this.activePoint = this._.cloneDeep(data);
+      this.setActivePoint(data);
+    },
+    // 取消选中的热力图
+    cancelPointHandle() {
+      this.activePoint = {};
+    },
+    // 生成缩略图
     createThumbnail() {
       if (this.$route.name !== 'view') return
       console.log('this.$route.name', this.$route.name);
@@ -495,34 +540,37 @@ export default {
         name: item.value
       })
     },
-    //TODO: 边界情况处理
-    pointMoveStartHandle(e, item) {
-      // 操作的是样式（style.transform）
-      console.log('e.currentTarget', e.currentTarget)
+
+    // 判断是点击还是拖拽
+    pointDownHandle(e, item) {
+      console.log('pointDownHandle:', e, item)
+      e.preventDefault();
+      this.isDragging = false;
+      const setDragTrue = () => {
+        this.isDragging = true;
+      }
+
+      let timer = setTimeout(setDragTrue, 200)
+
       const target = e.currentTarget;
-      console.log('target', target.style.transform);
       let transform = target.style.transform;
       const reg = /translate\((-?\d+(?:\.\d*)?)px, (-?\d+(?:\.\d*)?)px\)/;
       transform = transform.match(reg);
 
-
       let translateX = parseInt(transform[1]);
       let translateY = parseInt(transform[2]);
 
-      console.log('translateX', translateX)
-      console.log('translateY', translateY)
-      e.preventDefault();
+
       let startPos = {
         x: e.clientX,
         y: e.clientY
       }
 
       const mouseMoveHandle = (e) => {
-        console.log('mouseMoveHandle:', e)
+        this.isDragging = true;
 
         const diffX = e.clientX - startPos.x;
         const diffY = e.clientY - startPos.y;
-
         translateX += diffX;
         translateY += diffY;
 
@@ -530,26 +578,27 @@ export default {
           x: e.clientX,
           y: e.clientY
         }
-
-        console.log('diffX', diffX, diffY)
         target.style.transform = `translateZ(0px) translate(${translateX}px,${translateY}px) translate(-40px,-40px)`
       }
-      const mouseUpHandle = (e) => {
-        console.log('mouseUpHandle:', e)
-        // TODO: 这里屏幕坐标转化成世界坐标，有些许偏差
-        const pos = this.screenVector2World({
-          x: translateX,
-          y: translateY
-        })
-        // 相对于当前的相机位置坐标
-        const cameraPos = this.camera.position;
-        item.pos = {
-          x: cameraPos.x - pos.x,
-          y: cameraPos.y - pos.y,
-          z: cameraPos.z - pos.z,
-        };
-        // 将屏幕坐标转化成世界坐标
-        // 转化成世界坐标，存储
+
+      const mouseUpHandle = () => {
+        if (!this.isDragging) {
+          clearTimeout(timer);
+          this.clickPointHandle(item);
+          console.log('mouse up');
+        } else {
+          this.isDragging = false;
+          console.log('drag over');
+          const pos = this.screenVector2World({
+            x: translateX,
+            y: translateY
+          })
+          item.pos = {
+            x: pos.x,
+            y: pos.y,
+            z: pos.z,
+          };
+        }
         document.body.removeEventListener('mousemove', mouseMoveHandle)
         document.body.removeEventListener('mouseup', mouseUpHandle)
       }
@@ -596,25 +645,19 @@ export default {
       console.log('worldVector', worldVector)
       return worldVector
     },
-    changeItemHandle(index) {
-      console.log('changeItemHandle1111', this.scene.children)
+    changeSceneHandle(index) {
+      console.log('changeSceneHandle1111', this.scene.children)
       if (this.activeItem.shape) {
         // important:减少占用缓存
         this.scene.remove(this.activeItem.shape)
       }
 
       this.activeIndex = index;
+      // 选中的热点置空
+      this.activePoint = {};
       // TODO:当前的场景重新渲染 + 生成缩略图
-      const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
-      sphereGeometry.scale(1, 1, -1);
-
-      const texture = new THREE.TextureLoader().load(this.activeItem.url, () => {
-        const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
-        const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-        this.scene.add(sphere);
-
-        this.activeItem.shape = sphere;
-
+      if (this.activeItem.shape) {
+        this.scene.add(this.activeItem.shape);
         const cameraPos = this.activeItem.cameraPos;
         // 相机位置
         this.camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
@@ -622,11 +665,39 @@ export default {
         this.controls.update();
 
         this.renderer.render(this.scene, this.camera)
-      });
+      } else {
+        const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
+        sphereGeometry.scale(1, 1, -1);
+
+
+        const texture = new THREE.TextureLoader().load(this.activeItem.url, () => {
+          const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
+          const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+          this.scene.add(sphere);
+
+          this.activeItem.shape = sphere;
+
+          const cameraPos = this.activeItem.cameraPos;
+          // 相机位置
+          this.camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
+          // important:通过参数更新相机位置，必须调用controls的update才会生效
+          this.controls.update();
+
+          this.renderer.render(this.scene, this.camera)
+        });
+      }
+
+    },
+    setActivePoint(data) {
+      const points = this.doc.scenes[this.activeIndex].hotSpots;
+      const index = points.findIndex(item => {
+        return item.id === data.id
+      })
+      points.splice(index, 1, data)
     },
     clickPointHandle(item) {
+      console.log('clickPointHandle1111')
       this.activePoint = item;
-
     }
   },
   mounted() {
@@ -782,12 +853,14 @@ export default {
     @include flex();
 
     .scene-item {
+      position: relative;
       width: 80px;
       height: 80px;
       border: 1px solid #eee;
       border-radius: 3px;
       margin-top: 10px;
       margin-right: 10px;
+      cursor: pointer;
 
       &.is-active {
         border: 2px solid $--color-primary;
@@ -804,6 +877,18 @@ export default {
         width: 100%;
         height: 100%;
         object-fit: cover;
+      }
+
+      &__name {
+        position: absolute;
+        width: 100%;
+        height: 30px;
+        left: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: #fff;
+        text-align: center;
+        padding-top: 5px;
       }
     }
   }

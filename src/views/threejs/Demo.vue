@@ -25,9 +25,10 @@ export default {
       const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 100);
 
       // 只需要那拿到xyz即可
-      camera.position.x = -0.46777005030326513
-      camera.position.y = 0.7928852740147417;
-      camera.position.z = 1.3142379066996237;
+      camera.position.set(0, 0, 0.1)
+      // camera.position.x = -0.46777005030326513
+      // camera.position.y = 0.7928852740147417;
+      // camera.position.z = 1.3142379066996237;
       // x: -0.46777005030326513
       // y: 0.7928852740147417
       // z: 1.3142379066996237
@@ -72,7 +73,7 @@ export default {
         scene.add(sphere)
       }
 
-      let shape = 'sphere';
+      let shape = 'box';
       if (shape === 'box') {
         renderByBox();
       } else {
@@ -113,68 +114,68 @@ export default {
   },
   mounted() {
     this.$nextTick(() => {
-      this.init();
-      // const {camera, scene, container} = this.init();
+      // this.init();
+      const {camera, scene, container} = this.init();
 
-      // function renderPoints() {
-      //   const hotPoints = [{
-      //     position: {
-      //       x: 0,
-      //       y: 0,
-      //       z: -0.2
-      //     },
-      //     detail: {
-      //       "title": "信息点1"
-      //     }
-      //   },
-      //     {
-      //       position: {
-      //         x: -0.2,
-      //         y: -0.05,
-      //         z: 0.2
-      //       },
-      //       detail: {
-      //         "title": "信息点2"
-      //       }
-      //     }]
-      //   const pointTexture = new THREE.TextureLoader().load('3d/images/hot.png');
-      //   const material = new THREE.SpriteMaterial({map: pointTexture});
-      //
-      //   let poiObjects = [];
-      //   for (let i = 0; i < hotPoints.length; i++) {
-      //     const sprite = new THREE.Sprite(material);
-      //     sprite.scale.set(0.1, 0.1, 0.1);
-      //     const position = hotPoints[i].position
-      //     console.log('position', position)
-      //     sprite.position.set(position.x, position.y, position.z)
-      //
-      //     scene.add(sprite);
-      //
-      //     sprite.detail = hotPoints[i].detail;
-      //     poiObjects.push(sprite);
-      //   }
-      //   return poiObjects
-      // }
-      //
-      // const poiObjects = renderPoints();
-      // container.addEventListener('click', function (event) {
-      //   console.log('container click1111');
-      //   event.preventDefault();
-      //
-      //   const raycaster = new THREE.Raycaster();
-      //   const mouse = new THREE.Vector2();
-      //
-      //   mouse.x = (event.clientX / document.body.clientWidth) * 2 - 1;
-      //   mouse.y = -(event.clientY / document.body.clientHeight) * 2 + 1;
-      //
-      //   raycaster.setFromCamera(mouse, camera)
-      //
-      //   const intersects = raycaster.intersectObjects(poiObjects);
-      //
-      //   if (intersects.length > 0) {
-      //     alert('点击了热点' + intersects[0].object.detail.title)
-      //   }
-      // })
+      function renderPoints() {
+        const hotPoints = [{
+          position: {
+            x: 0,
+            y: 0,
+            z: -0.2
+          },
+          detail: {
+            "title": "信息点1"
+          }
+        },
+          {
+            position: {
+              x: -0.2,
+              y: -0.05,
+              z: 0.2
+            },
+            detail: {
+              "title": "信息点2"
+            }
+          }]
+        const pointTexture = new THREE.TextureLoader().load('3d/images/hot.png');
+        const material = new THREE.SpriteMaterial({map: pointTexture});
+
+        let poiObjects = [];
+        for (let i = 0; i < hotPoints.length; i++) {
+          const sprite = new THREE.Sprite(material);
+          sprite.scale.set(0.1, 0.1, 0.1);
+          const position = hotPoints[i].position
+          console.log('position', position)
+          sprite.position.set(position.x, position.y, position.z)
+
+          scene.add(sprite);
+
+          sprite.detail = hotPoints[i].detail;
+          poiObjects.push(sprite);
+        }
+        return poiObjects
+      }
+
+      const poiObjects = renderPoints();
+      container.addEventListener('click', function (event) {
+        console.log('container click1111');
+        event.preventDefault();
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        mouse.x = (event.clientX / document.body.clientWidth) * 2 - 1;
+        mouse.y = -(event.clientY / document.body.clientHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera)
+
+        const intersects = raycaster.intersectObjects(poiObjects);
+
+        if (intersects.length > 0) {
+          alert('点击了热点' + intersects[0].object.detail.title)
+        }
+      })
     })
   }
 }
