@@ -7,7 +7,9 @@
       @click:outside="closeHandle">
     <v-card>
       <v-card-title>作品预览</v-card-title>
-      <div id="preview"></div>
+      <div id="preview"
+           @click="pointClickHandle">
+      </div>
     </v-card>
   </v-dialog>
 </template>
@@ -40,6 +42,17 @@ export default {
       }
     }
   },
+  data() {
+    return {
+      controls: null,
+      camera: null,
+      scene: null,
+      renderer: null,
+      container: null,
+      // 热点
+      poiObjects: []
+    }
+  },
   methods: {
     closeHandle() {
       console.log('closeHandle');
@@ -48,6 +61,31 @@ export default {
     // 角度转弧度
     degToRad(deg) {
       return Math.PI / 180 * deg
+    },
+    changeScene(data) {
+      console.log('changeScene data', data)
+      if (data.sphere) {
+        this.sphere.material = data.sphere;
+        // 相机位置更新
+        const cameraPos = data.cameraPos;
+        this.camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
+        this.controls.update();
+      } else {
+        // TODO:切换场景这里，可增加动画过渡（https://juejin.cn/post/7047709128600322056#heading-13）
+        const texture = new THREE.TextureLoader().load(data.url, () => {
+          const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
+          this.sphere.material = sphereMaterial;
+          data.sphere = sphereMaterial;
+          // 相机位置
+          const cameraPos = data.cameraPos;
+          this.camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
+          // important:通过参数更新相机位置，必须调用controls的update才会生效
+          this.controls.update();
+
+        });
+
+
+      }
     },
     async renderScene(data) {
       const container = document.getElementById('preview');
@@ -64,9 +102,6 @@ export default {
       camera.position.x = data.cameraPos.x;
       camera.position.y = data.cameraPos.y;
       camera.position.z = data.cameraPos.z;
-
-      this.camera = camera;
-      this.scene = scene;
 
 
       const controls = new OrbitControls(camera, renderer.domElement);
@@ -85,13 +120,14 @@ export default {
             const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
             scene.add(sphere)
             // render();
-            resolve()
+            data.sphere = sphereMaterial;
+            resolve(sphere)
           });
         })
 
       }
 
-      await renderModel(data.url);
+      const sphere = await renderModel(data.url);
 
       function render() {
         renderer.render(scene, camera);
@@ -100,7 +136,8 @@ export default {
 
       controls.addEventListener('change', render);
 
-      return {renderer, controls, camera, scene}
+
+      return {renderer, controls, camera, scene, container, sphere}
     },
 
     textureLoaderHandle(url) {
@@ -125,21 +162,39 @@ export default {
         const position = hotPoints[i].pos
         sprite.position.set(position.x, position.y, position.z)
 
-        scene.add(sprite);
-
-        sprite.detail = hotPoints[i].detail;
+        sprite.detail = item
         poiObjects.push(sprite);
+        scene.add(sprite);
       }
 
       return poiObjects
     },
-    async init() {
-      const data = this.doc.scenes[0]
+    findTargetScene(id) {
+      const target = this.doc.scenes.find(item => {
+        return item.id === id
+      })
+
+      return target
+    },
+    async init(data = this.doc.scenes[0]) {
       const points = data.hotSpots
       // 渲染场景
-      const {renderer, controls, scene, camera} = await this.renderScene(data)
+      const {
+        renderer,
+        controls,
+        scene,
+        camera,
+        container,
+        sphere
+      } = await this.renderScene(data)
+      this.renderer = renderer;
+      this.controls = controls;
+      this.scene = scene;
+      this.camera = camera;
+      this.container = container;
+      this.sphere = sphere;
       // 渲染热点
-      await this.renderPoint(scene, points)
+      this.poiObjects = await this.renderPoint(scene, points)
 
       function render() {
         renderer.render(scene, camera);
@@ -147,11 +202,52 @@ export default {
 
       render();
       controls.addEventListener('change', render);
+
+
+    },
+    async pointClickHandle(event) {
+      event.preventDefault();
+      // 光线投射Raycaster
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+      // TODO:这里有问题
+      mouse.x = (event.clientX / document.body.clientWidth) * 2 - 1;
+      mouse.y = -(event.clientY / document.body.clientHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, this.camera)
+
+      const intersects = raycaster.intersectObjects(this.poiObjects, true);
+
+      console.log('intersects:', intersects);
+
+      if (intersects.length > 0) {
+        console.log('点击了热点', intersects[0])
+        const detail = intersects[0].object.detail;
+        // 清空场景的元素（热点）
+        this.scene.children = this.scene.children.filter(item => {
+          return item.type !== 'Sprite'
+        })
+        switch (detail.hotType) {
+          case 'scene': {
+            // 切换场景
+            const scene = this.findTargetScene(detail.value);
+            if (scene) {
+              // 重新渲染热点
+              this.poiObjects = await this.renderPoint(this.scene, scene.hotSpots);
+              this.changeScene(scene);
+              console.log('this.poiObjects', this.poiObjects)
+            }
+          }
+            break;
+          default:
+            break;
+        }
+      }
     }
   },
   mounted() {
-    this.$nextTick(() => {
-      this.init()
+    this.$nextTick(async () => {
+      await this.init();
     })
   }
 }

@@ -4,7 +4,9 @@
       <div class="header-wrapper">
         <div class="sub-title">{{ doc.name }}</div>
         <div class="right">
-          <v-btn class="ma-2" small outlined color="success">保存</v-btn>
+          <v-btn class="ma-2" small outlined color="success"
+                 @click="saveAction">保存
+          </v-btn>
           <v-btn class="ma-2" small outlined color="indigo"
                  @click="isShowPreviewDlg=true">预览
           </v-btn>
@@ -198,6 +200,11 @@ import {ICON_MAP} from '@/assets/js/const.js'
 
 // TODO: 目标：实现类似贝壳的3D看房效果
 // 每个场景：拥有自身的热点信息 初始角度
+
+// TODO:添加热点优化
+// 默认添加到容器的中间
+import docJSON from 'json/doc.json'
+
 export default {
   name: 'editor-3d',
   data() {
@@ -245,108 +252,7 @@ export default {
       activeName: 'view',
       isLoading: true,
 
-      doc: {
-        name: '作品标题A',
-        scenes: [
-          {
-            id: 'xxx1',
-            name: '场景1',
-            url: '3d/images/scene.jpeg',
-            params: {
-              near: 0.1,
-              far: 100,
-              fov: 90,
-              // 最大仰角和俯视角
-              minPolarAngle: -90,
-              maxPolarAngle: 90,
-              // 水平方向视角限制
-              minAzimuthAngle: -180,
-              maxAzimuthAngle: 180,
-            },
-            hotSpots: [
-              {
-                id: '1',
-                iconType: 'sys',
-                iconSize: 10,
-                iconPath: 'img/new_spotd1_gif.png',
-                hotType: 'scene',
-                pos: {
-                  x: 0,
-                  y: 0,
-                  z: -0.2
-                },
-                value: ''
-              }
-            ],
-            cameraPos: {
-              x: 0,
-              y: 0,
-              z: 0.1
-            },
-            shape: null,
-
-          },
-          {
-            id: 'xxx2',
-            name: '场景2',
-            url: '3d/images/scene1.jpeg',
-            params: {
-              near: 0.1,
-              far: 100,
-              fov: 90,
-              // 最大仰角和俯视角
-              minPolarAngle: -90,
-              maxPolarAngle: 90,
-              // 水平方向视角限制
-              minAzimuthAngle: -180,
-              maxAzimuthAngle: 180,
-            },
-            hotSpots: [
-              {
-                id: 'b1',
-                iconType: 'sys',
-                iconSize: 10,
-                iconPath: 'img/new_spotd2_gif.png',
-                hotType: 'link',
-                pos: {
-                  x: -4.873413451526259e-8,
-                  y: -0.09999999999995005,
-                  z: 8.732624540095245e-8
-                }
-              }
-            ],
-            cameraPos: {
-              x: -4.873413451526259e-8,
-              y: -0.09999999999995005,
-              z: 8.732624540095245e-8
-            },
-            shape: null
-          },
-          {
-            id: 'xxx3',
-            name: '场景3',
-            url: '3d/images/scene2.jpeg',
-            params: {
-              near: 0.1,
-              far: 100,
-              fov: 90,
-              // 最大仰角和俯视角
-              minPolarAngle: -90,
-              maxPolarAngle: 90,
-              // 水平方向视角限制
-              minAzimuthAngle: -180,
-              maxAzimuthAngle: 180,
-            },
-            hotSpots: [],
-            cameraPos: {
-              x: 0,
-              y: 0,
-              z: 0.1
-            },
-            shape: null
-          }
-        ]
-      },
+      doc: docJSON,
       // 当前编辑item的索引值
       activeIndex: 0,
       controls: null,
@@ -455,8 +361,8 @@ export default {
         })
       }
 
-      const shape = await renderModel(this.activeItem.url);
-      this.activeItem.shape = shape;
+      await renderModel(this.activeItem.url);
+      // this.activeItem.shape = shape;
       render();
       this.isLoading = false;
 
@@ -675,7 +581,7 @@ export default {
           const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
           this.scene.add(sphere);
 
-          this.activeItem.shape = sphere;
+          // this.activeItem.shape = sphere;
 
           const cameraPos = this.activeItem.cameraPos;
           // 相机位置
@@ -698,6 +604,9 @@ export default {
     clickPointHandle(item) {
       console.log('clickPointHandle1111')
       this.activePoint = item;
+    },
+    saveAction() {
+      console.log('saveAction doc:', JSON.stringify(this.doc))
     }
   },
   mounted() {
