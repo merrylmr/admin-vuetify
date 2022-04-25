@@ -2,13 +2,14 @@
   <v-dialog
       max-width="800px"
       width="800px"
+      :fullscreen="false"
       :value="visible"
       :overlay-opacity="0.8"
       @click:outside="closeHandle">
     <v-card>
-      <v-card-title>作品预览</v-card-title>
+      <!--      <v-card-title>作品预览</v-card-title>-->
       <div id="preview"
-           @click="pointClickHandle">
+      >
       </div>
     </v-card>
   </v-dialog>
@@ -23,15 +24,6 @@ export default {
   props: {
     visible: {
       type: Boolean
-    },
-    url: {
-      type: String,
-    },
-    cameraPos: {
-      type: Object
-    },
-    params: {
-      type: Object
     },
     doc: {
       type: Object,
@@ -231,13 +223,18 @@ export default {
       // 光线投射Raycaster
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2();
-      // TODO:这里有问题
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      // https://www.it1352.com/1990090.html
+      // 鼠标坐标问题
+      const canvasPos = this.container.getBoundingClientRect();
+      const mouseX = event.clientX - canvasPos.left;
+      const mouseY = event.clientY - canvasPos.top;
+      mouse.x = (mouseX / this.container.clientWidth) * 2 - 1;
+      mouse.y = -(mouseY / this.container.clientHeight) * 2 + 1;
 
       raycaster.setFromCamera(mouse, this.camera)
 
-      const intersects = raycaster.intersectObjects(this.poiObjects, true);
+      const intersects = raycaster.intersectObjects(this.poiObjects);
 
       console.log('intersects:', intersects);
 
@@ -269,6 +266,7 @@ export default {
   mounted() {
     this.$nextTick(async () => {
       await this.init();
+      this.container.addEventListener('click', this.pointClickHandle, false)
     })
   }
 }

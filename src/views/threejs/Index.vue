@@ -175,8 +175,6 @@
     <PreviewDlg
         v-if="isShowPreviewDlg"
         :visible="isShowPreviewDlg"
-        :params="params"
-        :camera-pos="cameraPos"
         :doc="doc"
         @close="isShowPreviewDlg=false">
     </PreviewDlg>
