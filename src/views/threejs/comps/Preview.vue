@@ -72,6 +72,7 @@ export default {
         this.controls.update();
       } else {
         // TODO:切换场景这里，可增加动画过渡（https://juejin.cn/post/7047709128600322056#heading-13）
+        // gsap.to
         const texture = new THREE.TextureLoader().load(data.url, () => {
           const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
           this.sphere.material = sphereMaterial;
@@ -147,18 +148,38 @@ export default {
         });
       })
     },
-    // 渲染热点
+
+    // 计算Sprite的缩放
+    // https://segmentfault.com/a/1190000041644858
+    // TODO: 这里还需要计算一个tan(fov/2)的值，默认90为1
+    calcSpriteScale(icon) {
+      //  LScaleY = PX * (2 * tan(fov / 2)) / canvasHeight (高度)
+      //  PX = L/(2*tan(fov/2))*canvasHeight => LScaleX =px* 2*tan(fov/2) / canvasHeight
+      const scaleY = icon.iconSize * 2 / this.container.clientHeight
+      const scaleX = icon.iconSize * 2 / this.container.clientHeight
+      console.log('calcSpriteScale:', scaleX, scaleY)
+      return {scaleX, scaleY}
+    },
+    // 渲染热点(点击范围)
     async renderPoint(scene, hotPoints) {
       let poiObjects = [];
       for (let i = 0; i < hotPoints.length; i++) {
         const item = hotPoints[i];
         // 这里加载是一个异步的过程
         const pointTexture = await this.textureLoaderHandle(item.iconPath)
-        console.log('pointTexture:', pointTexture)
-        const material = new THREE.SpriteMaterial({map: pointTexture});
+        console.log('renderPoint pointTexture:', pointTexture)
+        const material = new THREE.SpriteMaterial(
+            {
+              map: pointTexture,
+              // 关闭大小跟随相机距离变化的特性
+              sizeAttenuation: false
+            });
         const sprite = new THREE.Sprite(material);
 
-        sprite.scale.set(0.1, 0.1, 0.1);
+        const {scaleX, scaleY} = this.calcSpriteScale(item)
+        sprite.scale.x = scaleX;
+        sprite.scale.y = scaleY;
+        // sprite.scale.set(scaleX, scaleY, 0.1);
         const position = hotPoints[i].pos
         sprite.position.set(position.x, position.y, position.z)
 
@@ -211,8 +232,8 @@ export default {
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2();
       // TODO:这里有问题
-      mouse.x = (event.clientX / document.body.clientWidth) * 2 - 1;
-      mouse.y = -(event.clientY / document.body.clientHeight) * 2 + 1;
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
       raycaster.setFromCamera(mouse, this.camera)
 

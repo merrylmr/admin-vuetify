@@ -66,8 +66,9 @@
             <v-slider
                 thumb-label="always"
                 v-model="form.iconSize"
-                min="-100"
+                min="10"
                 max="100"
+                @change="changeHandle"
             ></v-slider>
 
 
@@ -170,7 +171,7 @@ export default {
       form: {
         iconType: 'sys',
         iconPath: 'img/new_spotd1_gif.png',
-        iconSize: 10,
+        iconSize: 50,
         hotType: 'scene',
         value: '',
         pos: {
@@ -223,7 +224,7 @@ export default {
         id: randomString(),
         iconType: 'sys',
         iconPath: 'img/new_spotd1_gif.png',
-        iconSize: 10,
+        iconSize: 50,
         hotType: 'scene',
         pos: {
           x: 0,
