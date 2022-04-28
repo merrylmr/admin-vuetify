@@ -171,7 +171,7 @@ export default {
       form: {
         iconType: 'sys',
         iconPath: 'img/new_spotd1_gif.png',
-        iconSize: 50,
+        iconSize: 80,
         hotType: 'scene',
         value: '',
         pos: {
@@ -224,7 +224,7 @@ export default {
         id: randomString(),
         iconType: 'sys',
         iconPath: 'img/new_spotd1_gif.png',
-        iconSize: 50,
+        iconSize: 80,
         hotType: 'scene',
         pos: {
           x: 0,
@@ -252,14 +252,17 @@ export default {
     }
   },
   watch: {
-    activePoint(n) {
-      console.log('activePoint watch:', n)
-      this.form = this._.cloneDeep(n)
-      if (n && n.id) {
-        this.drawer = true;
-      } else {
-        this.drawer = false;
-      }
+    activePoint: {
+      handler(n) {
+        console.log('activePoint watch:', n)
+        this.form = this._.cloneDeep(n)
+        if (n && n.id) {
+          this.drawer = true;
+        } else {
+          this.drawer = false;
+        }
+      },
+      deep: true
     }
   }
 }

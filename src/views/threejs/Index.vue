@@ -45,12 +45,13 @@
           </div>
           <!--热点列表-->
           <div class="hotSpot-list"
+               :key="uniqueId"
                v-if="$route.name==='hot' && !isLoading">
             <div class="hotStop-item"
                  :class="{'is-active':item.id===_.get(activePoint,'id')}"
                  @mousedown="pointDownHandle($event,item)"
                  v-for="(item,index) in hotSpots"
-                 :style="transformStyle(item.pos)"
+                 :style="transformStyle(item.pos,item)"
                  :key="index">
               <img :src="item.iconPath">
             </div>
@@ -202,7 +203,7 @@ import {ICON_MAP} from '@/assets/js/const.js'
 // TODO:添加热点优化
 // 默认添加到容器的中间
 import docJSON from 'json/doc.json'
-
+import {randomString} from '@/assets/js/utils.js'
 export default {
   name: 'editor-3d',
   data() {
@@ -255,26 +256,28 @@ export default {
       activeIndex: 0,
       controls: null,
       activePoint: {},
-      isDragging: false
+      isDragging: false,
+      uniqueId: ''
     }
   },
   components: {PreviewDlg, HotSpot},
   computed: {
     transformStyle() {
-      return (point) => {
-        // 相对于当前的相机位置坐标
-        //  现在的问题：在编辑器中，坐标点需要相对相机位置来计算，这样，在旋转、移动画布的时候，才能够跟随移动，否则热点不会移动
-        // 为什么是2*cameraPos? 暂不是很清楚
-        // 但是在真正的预览界面，则无需相对相机；
+      return (point, item) => {
         const cameraPos = this.camera.position;
-        const pos = this.worldVector2Screen({
-          x: 2 * cameraPos.x - point.x,
-          y: 2 * cameraPos.y - point.y,
-          z: 2 * cameraPos.z - point.z
+        console.log('cameraPos:', cameraPos)
+        let pos = this.worldVector2Screen({
+          x: point.x,
+          y: point.y,
+          z: point.z
         });
         console.log('transformStyle pos:', pos)
+        const visible = this.pointInSceneView(point)
         return {
-          transform: `translateZ(0px) translate(${pos.x}px,${pos.y}px) translate(-40px,-40px)`
+          transform: `translateZ(0px) translate(${pos.x}px,${pos.y}px) translate(-40px,-40px)`,
+          width: item.iconSize + 'px',
+          height: item.iconSize + 'px',
+          opacity: visible ? 1 : 0
         }
       }
 
@@ -288,8 +291,16 @@ export default {
     }
   },
   methods: {
+    // 添加热点：
     addPointHandle(data) {
+      // 计算pos,当前窗口的中间位置
+      const rect = this.container.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const pos = this.screenVector2World({x: centerX, y: centerY});
+      console.log('pos:', pos)
       const point = this._.cloneDeep(data);
+      point.pos = pos;
       this.doc.scenes[this.activeIndex].hotSpots.push(point);
       this.activePoint = point
     },
@@ -521,30 +532,47 @@ export default {
     // 拖拽热点，相机位置？
     // 拖动相机位置，屏幕坐标？
     worldVector2Screen(center) {
-      // 相对于相机的位置（{x:0,y:0,z:0.1}）
-      // const cameraPos = this.camera.position;
       const worldVector = new THREE.Vector3(
           center.x,
           center.y,
           center.z);
+      //  将一个三维坐标，投影到相机平面上，使之变成一个二维坐标。
+      //  需要注意的是，投影得到的结果是一个标准向量(或者叫单位向量)，
+      //  其值是限定在[-1,1]范围内的。
+      // 参考文档：https://segmentfault.com/q/1010000013062310
       const stdVector = worldVector.project(this.camera);
+      console.log('stdVector:', stdVector, worldVector)
       // console.log('stdVector:', stdVector);
-      const a = this.container.clientWidth / 2;
-      const b = this.container.clientHeight / 2;
+      const a = this.container.clientWidth;
+      const b = this.container.clientHeight;
 
-      console.log('a:', a, 'b:', b)
-      const x = Math.round(stdVector.x * a + a);
-      const y = Math.round(-stdVector.y * b + b);
-
+      const x = Math.round((0.5 + stdVector.x / 2) * (a));  //2
+      const y = Math.round((0.5 - stdVector.y / 2) * (b));
       console.log('worldVector2Screen---x-y:', x, y)
       return {x, y}
     },
-    // 屏幕坐标转世界坐标(与最开始的camera.position)计算出来的
+    // 点位是否在场景可视范围区域
+    pointInSceneView(point) {
+      // point
+      console.log('point:', point);
+      point = new THREE.Vector3(point.x, point.y, point.z)
+      const tempV = point.applyMatrix4(this.camera.matrixWorldInverse).applyMatrix4(this.camera.projectionMatrix);
+      if ((Math.abs(tempV.x) > 1) || (Math.abs(tempV.y) > 1) || (Math.abs(tempV.z) > 1)) {
+        // 在视野外了
+        console.log('在视野外了在视野外了在视野外了在视野外了在视野外了在视野外了')
+        return false
+      } else {
+        // 在视野内
+        return true
+      }
+    },
+    // 屏幕坐标转世界坐标
     screenVector2World(point) {
       console.log('point', point);
       const x = (point.x / this.container.clientWidth) * 2 - 1;
       const y = -(point.y / this.container.clientHeight) * 2 + 1;
       const stdVector = new THREE.Vector3(x, y, 0.5);
+      // 将向量转成threejs坐标
       const worldVector = stdVector.unproject(this.camera);
       console.log('worldVector', worldVector)
       return worldVector
@@ -617,6 +645,7 @@ export default {
 
       // const _this = this;
       const changeHandle = () => {
+        this.uniqueId = randomString()
         renderer.render(scene, camera);
         //  相机位置改变，
         console.log('position', camera.position)
@@ -743,6 +772,12 @@ export default {
 
       &.is-active {
         border: 3px solid orange;
+      }
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
       }
     }
   }
