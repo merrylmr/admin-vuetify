@@ -54,6 +54,11 @@
                  :style="transformStyle(item.pos,item)"
                  :key="index">
               <img :src="item.iconPath">
+              <!--      说明、注释渲染        -->
+              <div class="point-item__label"
+                   v-if="_.get(item,'title.show')">
+                {{ item.title.label }}
+              </div>
             </div>
           </div>
         </div>
@@ -190,46 +195,23 @@ import PreviewDlg from './comps/Preview.vue'
 import html2canvas from "html2canvas";
 import HotSpot from './comps/HotSpot.vue'
 import {ICON_MAP} from '@/assets/js/const.js'
-// TODO: 水平和垂直的角度需要再修改修改
-// 热点：
-// 第一步：实现可以拖拽
-// 第二步：位置坐标转化，随着鼠标的滚动、拖拽
-// 第三步： camera旋转时候， 位置改变（世界坐标系转屏幕坐标系）
 
 
-// TODO: 目标：实现类似贝壳的3D看房效果
-// 每个场景：拥有自身的热点信息 初始角度
-
-// TODO:添加热点优化
-// 默认添加到容器的中间
 import docJSON from 'json/doc.json'
 import {randomString} from '@/assets/js/utils.js'
+
+import {worldVector2Screen, pointInSceneView, screenVector2World} from './common.js'
+
 export default {
   name: 'editor-3d',
   data() {
     return {
       ICON_MAP,
-      // 相机参数
-      params: {
-        near: 0.1,
-        far: 100,
-        fov: 90,
-        // 最大仰角和俯视角
-        minPolarAngle: -90,
-        maxPolarAngle: 90,
-        // 水平方向视角限制
-        minAzimuthAngle: -180,
-        maxAzimuthAngle: 180,
-      },
+
       scene: null,
       renderer: null,
       camera: null,
       container: null,
-      cameraPos: {
-        x: 0,
-        y: 0,
-        z: 0.1
-      },
       isShowPreviewDlg: false,
       menuNav: [
         {
@@ -255,24 +237,25 @@ export default {
       // 当前编辑item的索引值
       activeIndex: 0,
       controls: null,
+      // 选中的热点
       activePoint: {},
-      isDragging: false,
-      uniqueId: ''
+      uniqueId: '',
+      // 透视相机参数
+      params: {},
+      sphere: null
     }
   },
   components: {PreviewDlg, HotSpot},
   computed: {
     transformStyle() {
       return (point, item) => {
-        const cameraPos = this.camera.position;
-        console.log('cameraPos:', cameraPos)
-        let pos = this.worldVector2Screen({
+        let pos = worldVector2Screen({
           x: point.x,
           y: point.y,
           z: point.z
-        });
+        }, this.container, this.camera);
         console.log('transformStyle pos:', pos)
-        const visible = this.pointInSceneView(point)
+        const visible = pointInSceneView(point, this.camera)
         return {
           transform: `translateZ(0px) translate(${pos.x}px,${pos.y}px) translate(-40px,-40px)`,
           width: item.iconSize + 'px',
@@ -288,16 +271,19 @@ export default {
     // 当前编辑场景的热点列表
     hotSpots() {
       return this.doc.scenes[this.activeIndex].hotSpots
-    }
+    },
   },
   methods: {
+    // 渲染注释
+    renderAnnotation() {
+    },
     // 添加热点：
     addPointHandle(data) {
       // 计算pos,当前窗口的中间位置
       const rect = this.container.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
-      const pos = this.screenVector2World({x: centerX, y: centerY});
+      const pos = screenVector2World({x: centerX, y: centerY}, this.container, this.camera);
       console.log('pos:', pos)
       const point = this._.cloneDeep(data);
       point.pos = pos;
@@ -315,7 +301,6 @@ export default {
     // 生成缩略图
     createThumbnail() {
       if (this.$route.name !== 'view') return
-      console.log('this.$route.name', this.$route.name);
       const dom = document.querySelector('#container');
       const thumbnailDom = document.querySelector('#preview-thumbnail');
       html2canvas(dom, {
@@ -325,8 +310,14 @@ export default {
         thumbnailDom.innerHTML = ''
         thumbnailDom.appendChild(canvas);
       })
-
-
+    },
+    // 图片资源加载器
+    textureLoaderHandle(url) {
+      return new Promise((resolve) => {
+        const pointTexture = new THREE.TextureLoader().load(url, () => {
+          resolve(pointTexture)
+        });
+      })
     },
     async init() {
       this.isLoading = true;
@@ -349,6 +340,7 @@ export default {
       this.camera = camera;
 
       const controls = new OrbitControls(camera, renderer.domElement);
+      this.container = container;
       // controls.zoomSpeed = 0.5;
       // controls.minPolarAngle = this.degToRad(this.params.minPolarAngle)
       // controls.maxPolarAngle = this.degToRad(this.params.maxPolarAngle)
@@ -357,67 +349,25 @@ export default {
       // controls.maxAzimuthAngle = this.degToRad(this.params.maxAzimuthAngle);
 
 
-      function renderModel(url) {
-        return new Promise((resolve) => {
-          const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
-          sphereGeometry.scale(1, 1, -1);
-          const texture = new THREE.TextureLoader().load(url, () => {
-            const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
-            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            scene.add(sphere)
-            resolve(sphere);
-          });
-        })
-      }
+      const texture = await this.textureLoaderHandle(this.activeItem.url)
+      const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
 
-      await renderModel(this.activeItem.url);
-      // this.activeItem.shape = shape;
+      const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
+      sphereGeometry.scale(1, 1, -1);
+      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      this.sphere = sphere
+      scene.add(sphere)
       render();
       this.isLoading = false;
 
       function render() {
         renderer.render(scene, camera);
-        //  获取当前视觉的坐标（x,y,z）
       }
-
-
-      function resizeHandle() {
-        console.log('resizeHandle1111')
-        const width = container.clientWidth;
-        const height = container.clientHeight;
-        renderer.setSize(width, height);
-        const k = width / width;//窗口宽高比
-        camera.aspect = k;
-        camera.updateProjectionMatrix();
-      }
-
-      window.addEventListener('resize', resizeHandle);
 
       // 辅助坐标系  参数250表示坐标系大小，可以根据场景大小去设置
       const axisHelper = new THREE.AxisHelper(25000);
       scene.add(axisHelper);
-
-      this.container = container;
       return {scene, camera, controls, renderer, container}
-    },
-
-    renderHotPoints(scene) {
-      const pointTexture = new THREE.TextureLoader().load('img/new_spotd1_gif.png');
-      const material = new THREE.SpriteMaterial({map: pointTexture});
-
-      let poiObjects = []
-      for (let i = 0; i < this.hotSpots.length; i++) {
-        let sprite = new THREE.Sprite(material);
-        sprite.scale.set(0.1, 0.1, 0.1);
-
-        const position = this.hotSpots[i].pos;
-        console.log('position:', position)
-        sprite.position.set(position.x, position.y, position.z)
-
-        scene.add(sprite)
-        poiObjects.push(sprite);
-      }
-      return poiObjects
     },
     // 角度转弧度
     degToRad(deg) {
@@ -443,12 +393,10 @@ export default {
     },
     // 设置当前视觉
     setCameraPosHandle() {
-      this.doc.scenes[this.activeIndex].cameraPos = this.camera.position;
-      this.cameraPos = this.camera.position;
-      // this.camera.updateProjectionMatrix();
-      // console.log('this.camera', this.camera);
+      this.doc.scenes[this.activeIndex].cameraPos = this._.cloneDeep(this.camera.position);
       this.createThumbnail()
     },
+    // 切换左侧菜单
     changeMenu(item) {
       this.activeName = item.value;
       this.$router.push({
@@ -460,9 +408,9 @@ export default {
     pointDownHandle(e, item) {
       console.log('pointDownHandle:', e, item)
       e.preventDefault();
-      this.isDragging = false;
+      let isDragging = false;
       const setDragTrue = () => {
-        this.isDragging = true;
+        isDragging = true;
       }
 
       let timer = setTimeout(setDragTrue, 200)
@@ -482,7 +430,7 @@ export default {
       }
 
       const mouseMoveHandle = (e) => {
-        this.isDragging = true;
+        isDragging = true;
 
         const diffX = e.clientX - startPos.x;
         const diffY = e.clientY - startPos.y;
@@ -497,17 +445,17 @@ export default {
       }
 
       const mouseUpHandle = () => {
-        if (!this.isDragging) {
+        if (!isDragging) {
           clearTimeout(timer);
           this.clickPointHandle(item);
           console.log('mouse up');
         } else {
-          this.isDragging = false;
+          isDragging = false;
           console.log('drag over');
-          const pos = this.screenVector2World({
+          const pos = screenVector2World({
             x: translateX,
             y: translateY
-          })
+          }, this.container, this.camera)
           item.pos = {
             x: pos.x,
             y: pos.y,
@@ -520,106 +468,34 @@ export default {
       document.body.addEventListener('mousemove', mouseMoveHandle)
       document.body.addEventListener('mouseup', mouseUpHandle)
     },
-    // 矢量坐标转化成平面坐标点
-    vectorToPos(vector3) {
-      console.log('vector', vector3);
-      const width = window.innerWidth - 51 - 230;
-      const height = window.innerHeight - 41;
-      console.log('width:', width, 'height:', height);
-      // const sceneCenter = this.cameraPos;
-    },
-    // 世界坐标->屏幕坐标
-    // 拖拽热点，相机位置？
-    // 拖动相机位置，屏幕坐标？
-    worldVector2Screen(center) {
-      const worldVector = new THREE.Vector3(
-          center.x,
-          center.y,
-          center.z);
-      //  将一个三维坐标，投影到相机平面上，使之变成一个二维坐标。
-      //  需要注意的是，投影得到的结果是一个标准向量(或者叫单位向量)，
-      //  其值是限定在[-1,1]范围内的。
-      // 参考文档：https://segmentfault.com/q/1010000013062310
-      const stdVector = worldVector.project(this.camera);
-      console.log('stdVector:', stdVector, worldVector)
-      // console.log('stdVector:', stdVector);
-      const a = this.container.clientWidth;
-      const b = this.container.clientHeight;
-
-      const x = Math.round((0.5 + stdVector.x / 2) * (a));  //2
-      const y = Math.round((0.5 - stdVector.y / 2) * (b));
-      console.log('worldVector2Screen---x-y:', x, y)
-      return {x, y}
-    },
-    // 点位是否在场景可视范围区域
-    pointInSceneView(point) {
-      // point
-      console.log('point:', point);
-      point = new THREE.Vector3(point.x, point.y, point.z)
-      const tempV = point.applyMatrix4(this.camera.matrixWorldInverse).applyMatrix4(this.camera.projectionMatrix);
-      if ((Math.abs(tempV.x) > 1) || (Math.abs(tempV.y) > 1) || (Math.abs(tempV.z) > 1)) {
-        // 在视野外了
-        console.log('在视野外了在视野外了在视野外了在视野外了在视野外了在视野外了')
-        return false
-      } else {
-        // 在视野内
-        return true
-      }
-    },
-    // 屏幕坐标转世界坐标
-    screenVector2World(point) {
-      console.log('point', point);
-      const x = (point.x / this.container.clientWidth) * 2 - 1;
-      const y = -(point.y / this.container.clientHeight) * 2 + 1;
-      const stdVector = new THREE.Vector3(x, y, 0.5);
-      // 将向量转成threejs坐标
-      const worldVector = stdVector.unproject(this.camera);
-      console.log('worldVector', worldVector)
-      return worldVector
-    },
-    changeSceneHandle(index) {
-      console.log('changeSceneHandle1111', this.scene.children)
-      if (this.activeItem.shape) {
-        // important:减少占用缓存
-        this.scene.remove(this.activeItem.shape)
-      }
-
+    // 切换场景
+    async changeSceneHandle(index) {
       this.activeIndex = index;
       // 选中的热点置空
       this.activePoint = {};
       // TODO:当前的场景重新渲染 + 生成缩略图
       if (this.activeItem.shape) {
-        this.scene.add(this.activeItem.shape);
-        const cameraPos = this.activeItem.cameraPos;
-        // 相机位置
-        this.camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
-        // important:通过参数更新相机位置，必须调用controls的update才会生效
-        this.controls.update();
-
-        this.renderer.render(this.scene, this.camera)
+        this.sphere.material = this.activeItem.shape;
       } else {
         const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
         sphereGeometry.scale(1, 1, -1);
 
-
-        const texture = new THREE.TextureLoader().load(this.activeItem.url, () => {
-          const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
-          const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-          this.scene.add(sphere);
-
-          // this.activeItem.shape = sphere;
-
-          const cameraPos = this.activeItem.cameraPos;
-          // 相机位置
-          this.camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
-          // important:通过参数更新相机位置，必须调用controls的update才会生效
-          this.controls.update();
-
-          this.renderer.render(this.scene, this.camera)
-        });
+        const texture = await this.textureLoaderHandle(this.activeItem.url)
+        const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
+        this.sphere.material = sphereMaterial;
+        this.activeItem.shape = sphereMaterial;
       }
+      // 相机位置
+      const cameraPos = this.activeItem.cameraPos;
+      this.camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
+      // important:通过参数更新相机位置，必须调用controls的update才会生效
+      this.controls.update();
+      this.renderer.render(this.scene, this.camera)
 
+      this.createThumbnail();
     },
+
+    // 设置选中的热点
     setActivePoint(data) {
       const points = this.doc.scenes[this.activeIndex].hotSpots;
       const index = points.findIndex(item => {
@@ -627,48 +503,52 @@ export default {
       })
       points.splice(index, 1, data)
     },
+
     clickPointHandle(item) {
-      console.log('clickPointHandle1111')
       this.activePoint = item;
     },
+
     saveAction() {
       console.log('saveAction doc:', JSON.stringify(this.doc))
     }
+
   },
   mounted() {
     this.activeName = this.$route.name;
+    this.params = this.doc.scenes[this.activeIndex].params;
     this.$nextTick(async () => {
-      const {scene, camera, controls, renderer} = await this.init();
+      const {
+        scene,
+        camera,
+        controls,
+        renderer,
+        container
+      } = await this.init();
       this.scene = scene;
       this.renderer = renderer;
       this.controls = controls;
+      this.container = container;
 
-      // const _this = this;
       const changeHandle = () => {
         this.uniqueId = randomString()
         renderer.render(scene, camera);
-        //  相机位置改变，
-        console.log('position', camera.position)
-        // _this.worldVector2Screen(camera.position)
-        this.activeItem.cameraPos = this._.cloneDeep(camera.position)
       }
-
       controls.addEventListener('change', changeHandle);
 
+      function resizeHandle() {
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        renderer.setSize(width, height);
+        const k = width / width;//窗口宽高比
+        camera.aspect = k;
+        camera.updateProjectionMatrix();
+      }
+
+      window.addEventListener('resize', resizeHandle);
+      // 生成场景缩略图
       this.createThumbnail();
     })
   },
-  watch: {
-    params: {
-      handler(n, o) {
-        console.log('new', n, 'old', o)
-        if (!this._.isEqual(n, o)) {
-          console.log('new', n, 'old', o)
-        }
-      },
-      deep: true
-    }
-  }
 }
 </script>
 
@@ -679,12 +559,8 @@ export default {
 }
 
 .header {
-
   height: 40px;
   border-bottom: 1px solid #eee;
-  //@include flex(flex-start, center);
-
-
   .header-wrapper {
     text-align: center;
     max-width: 1920px;
@@ -699,7 +575,6 @@ export default {
     float: right;
 
   }
-
 }
 
 
@@ -778,6 +653,18 @@ export default {
         width: 100%;
         height: 100%;
         object-fit: contain;
+      }
+
+      .point-item__label {
+        background-color: rgba(0, 0, 0, 0.5);
+        color: #fff;
+        padding: 10px;
+        border-radius: 5px;
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translate(-50%, -100%);
+        word-break: keep-all;
       }
     }
   }

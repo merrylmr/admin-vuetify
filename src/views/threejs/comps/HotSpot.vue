@@ -81,7 +81,7 @@
             </v-select>
 
             <div>
-              选择目标全景{{ form.value }}
+              选择目标全景
               <v-btn color="primary"
                      @click="isShowSceneDlg=true">选择场景
               </v-btn>
@@ -95,6 +95,25 @@
                 </div>
               </div>
             </div>
+
+            <div class="form-item">
+              <div class="form-item__label">
+                <span>标题</span>
+                <v-checkbox
+                    label="显示"
+                    v-model="form.title.show"
+                    @change="changeHandle">
+                </v-checkbox>
+              </div>
+              <div class="form-item__value">
+                <v-text-field
+                    v-model="form.title.label"
+                    @change="changeHandle"
+                    placeholder="请输入标题">
+                </v-text-field>
+              </div>
+            </div>
+
 
           </v-form>
         </div>
@@ -178,6 +197,10 @@ export default {
           x: 0,
           y: 0,
           z: 0.1
+        },
+        "title": {
+          "label": "",
+          "show": true
         }
       },
       isShowSceneDlg: false
@@ -230,6 +253,10 @@ export default {
           x: 0,
           y: 0,
           z: -0.2
+        },
+        title: {
+          label: '',
+          show: true
         }
       }
       this.$emit('addPoint', this.form)
@@ -311,6 +338,12 @@ export default {
 
   img {
     width: 100%;
+  }
+}
+
+.form-item {
+  &__label {
+    @include flex(space-between, center);
   }
 }
 </style>

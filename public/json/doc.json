@@ -26,7 +26,11 @@
             "y": 0,
             "z": -0.2
           },
-          "value": "xxx2"
+          "value": "xxx2",
+          "title": {
+            "label": "场景二",
+            "show": true
+          }
         }
       ],
       "cameraPos": {
@@ -61,7 +65,11 @@
             "y": 0.2988036522039401,
             "z": 0.09436614939449467
           },
-          "value": "xxx3"
+          "value": "xxx3",
+          "title": {
+            "label": "场景三",
+            "show": true
+          }
         }
       ],
       "cameraPos": {
@@ -96,7 +104,11 @@
             "y": 0.05227008654042249,
             "z": -0.29176331729743343
           },
-          "value": "xxx1"
+          "value": "xxx1",
+          "title": {
+            "label": "场景一",
+            "show": true
+          }
         }
       ],
       "cameraPos": {

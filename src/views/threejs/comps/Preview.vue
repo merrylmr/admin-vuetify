@@ -6,10 +6,22 @@
       :value="visible"
       :overlay-opacity="0.8"
       @click:outside="closeHandle">
-    <v-card>
+    <v-card class="preview-wrapper">
       <!--      <v-card-title>作品预览</v-card-title>-->
-      <div id="preview"
-      >
+      <div id="preview">
+      </div>
+      <div class="hot-point__list"
+           :key="uniqueId">
+        <div class="hot-point__item"
+             :style="transformStyle(item.pos,item)"
+             v-for="(item,index) in hotPointList"
+             :key="index">
+          <!--场景说明   -->
+          <div class="item__label"
+               @click="pointLabelClickHandle(item)">
+            {{ _.get(item, 'title.label') }}
+          </div>
+        </div>
       </div>
     </v-card>
   </v-dialog>
@@ -18,6 +30,9 @@
 <script>
 import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
+
+import {pointInSceneView, worldVector2Screen} from '../common.js'
+import {randomString} from '@/assets/js/utils.js'
 
 export default {
   name: 'preview-dlg',
@@ -42,44 +57,61 @@ export default {
       renderer: null,
       container: null,
       // 热点
-      poiObjects: []
+      poiObjects: [],
+      // 热点原始数据
+      hotPointList: [],
+      uniqueId: ''
     }
+  },
+  computed: {
+    transformStyle() {
+      return (point, item) => {
+        let pos = worldVector2Screen({
+          x: point.x,
+          y: point.y,
+          z: point.z
+        }, this.container, this.camera);
+
+        console.log('transformStyle pos:', pos)
+        const visible = pointInSceneView(point, this.camera)
+        return {
+          transform: `translateZ(0px) translate(${pos.x}px,${pos.y}px) translate(-40px,-40px)`,
+          width: item.iconSize + 'px',
+          height: item.iconSize + 'px',
+          opacity: visible ? 1 : 0
+        }
+      }
+
+    },
   },
   methods: {
     closeHandle() {
-      console.log('closeHandle');
       this.$emit('close')
     },
     // 角度转弧度
     degToRad(deg) {
       return Math.PI / 180 * deg
     },
-    changeScene(data) {
-      console.log('changeScene data', data)
+    // 切换场景
+    async changeSceneHandle(data) {
+      console.log('changeSceneHandle data', data)
       if (data.sphere) {
         this.sphere.material = data.sphere;
-        // 相机位置更新
-        const cameraPos = data.cameraPos;
-        this.camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
-        this.controls.update();
       } else {
         // TODO:切换场景这里，可增加动画过渡（https://juejin.cn/post/7047709128600322056#heading-13）
         // gsap.to
-        const texture = new THREE.TextureLoader().load(data.url, () => {
-          const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
-          this.sphere.material = sphereMaterial;
-          data.sphere = sphereMaterial;
-          // 相机位置
-          const cameraPos = data.cameraPos;
-          this.camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
-          // important:通过参数更新相机位置，必须调用controls的update才会生效
-          this.controls.update();
-
-        });
-
-
+        const texture = await this.textureLoaderHandle(data.url);
+        const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
+        this.sphere.material = sphereMaterial;
+        data.sphere = sphereMaterial;
       }
+      // 相机位置
+      const cameraPos = data.cameraPos;
+      this.camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
+      // important:通过参数更新相机位置，必须调用controls的update才会生效
+      this.controls.update();
     },
+
     async renderScene(data) {
       const container = document.getElementById('preview');
       const width = container.clientWidth;
@@ -98,38 +130,14 @@ export default {
 
 
       const controls = new OrbitControls(camera, renderer.domElement);
-      // controls.minPolarAngle = this.degToRad(data.params.minPolarAngle)
-      // controls.maxPolarAngle = this.degToRad(data.params.maxPolarAngle)
-      //
-      // controls.minAzimuthAngle = this.degToRad(data.params.minAzimuthAngle);
-      // controls.maxAzimuthAngle = this.degToRad(data.params.maxAzimuthAngle);
-
-      function renderModel(url) {
-        return new Promise((resolve) => {
-          const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
-          sphereGeometry.scale(1, 1, -1);
-          const texture = new THREE.TextureLoader().load(url, () => {
-            const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
-            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            scene.add(sphere)
-            // render();
-            data.sphere = sphereMaterial;
-            resolve(sphere)
-          });
-        })
-
-      }
-
-      const sphere = await renderModel(data.url);
-
-      function render() {
-        renderer.render(scene, camera);
-        //  获取当前视觉的坐标（x,y,z）
-      }
-
-      controls.addEventListener('change', render);
 
 
+      const texture = await this.textureLoaderHandle(data.url)
+      const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
+      const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
+      sphereGeometry.scale(1, 1, -1);
+      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      scene.add(sphere)
       return {renderer, controls, camera, scene, container, sphere}
     },
 
@@ -154,6 +162,7 @@ export default {
     },
     // 渲染热点(点击范围)
     async renderPoint(scene, hotPoints) {
+      this.hotPointList = hotPoints;
       let poiObjects = [];
       for (let i = 0; i < hotPoints.length; i++) {
         const item = hotPoints[i];
@@ -171,7 +180,6 @@ export default {
         const {scaleX, scaleY} = this.calcSpriteScale(item)
         sprite.scale.x = scaleX;
         sprite.scale.y = scaleY;
-        // sprite.scale.set(scaleX, scaleY, 0.1);
         const position = hotPoints[i].pos
         sprite.position.set(position.x, position.y, position.z)
 
@@ -179,16 +187,16 @@ export default {
         poiObjects.push(sprite);
         scene.add(sprite);
       }
-
       return poiObjects
     },
+    // 寻找目标场景
     findTargetScene(id) {
       const target = this.doc.scenes.find(item => {
         return item.id === id
       })
-
       return target
     },
+
     async init(data = this.doc.scenes[0]) {
       const points = data.hotSpots
       // 渲染场景
@@ -209,15 +217,41 @@ export default {
       // 渲染热点
       this.poiObjects = await this.renderPoint(scene, points)
 
+      // 渲染热点上的文字说明
+      const _this = this;
+
       function render() {
         renderer.render(scene, camera);
+        //  获取当前视觉的坐标（x,y,z）
+        _this.uniqueId = randomString()
       }
 
       render();
       controls.addEventListener('change', render);
-
-
     },
+    // 点击热点的文字说明
+    async pointLabelClickHandle(detail) {
+      // 清空场景的元素（热点）
+      this.scene.children = this.scene.children.filter(item => {
+        return item.type !== 'Sprite'
+      })
+      switch (detail.hotType) {
+        case 'scene': {
+          // 切换场景
+          const scene = this.findTargetScene(detail.value);
+          if (scene) {
+            // 重新渲染热点
+            this.poiObjects = await this.renderPoint(this.scene, scene.hotSpots);
+            // 切换场景
+            this.changeSceneHandle(scene);
+          }
+        }
+          break;
+        default:
+          break;
+      }
+    },
+    // 点击热点回调
     async pointClickHandle(event) {
       event.preventDefault();
       // 光线投射Raycaster
@@ -241,25 +275,8 @@ export default {
       if (intersects.length > 0) {
         console.log('点击了热点', intersects[0])
         const detail = intersects[0].object.detail;
-        // 清空场景的元素（热点）
-        this.scene.children = this.scene.children.filter(item => {
-          return item.type !== 'Sprite'
-        })
-        switch (detail.hotType) {
-          case 'scene': {
-            // 切换场景
-            const scene = this.findTargetScene(detail.value);
-            if (scene) {
-              // 重新渲染热点
-              this.poiObjects = await this.renderPoint(this.scene, scene.hotSpots);
-              this.changeScene(scene);
-              console.log('this.poiObjects', this.poiObjects)
-            }
-          }
-            break;
-          default:
-            break;
-        }
+
+        this.pointLabelClickHandle(detail)
       }
     }
   },
@@ -273,8 +290,41 @@ export default {
 </script>
 
 <style scoped lang="scss">
+.preview-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
 #preview {
   width: 100%;
   height: 400px;
+}
+
+.hot-point__list {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  user-select: none;
+  pointer-events: none;
+}
+
+.hot-point__item {
+  position: absolute;
+
+  .item__label {
+    pointer-events: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -100%);
+    word-break: keep-all;
+    cursor: pointer;
+  }
 }
 </style>
