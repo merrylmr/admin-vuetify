@@ -117,6 +117,9 @@
 
           </v-form>
         </div>
+        <div class="footer">
+          <v-btn @click="delPointHandle()">删除</v-btn>
+        </div>
       </div>
     </v-navigation-drawer>
     <SceneDlg
@@ -276,6 +279,10 @@ export default {
     closeDrawHandle() {
       this.drawer = false;
       this.$emit('cancel')
+    },
+    // 删除热点
+    delPointHandle() {
+      this.$emit('delPoint');
     }
   },
   watch: {

@@ -173,7 +173,8 @@
               :doc="doc"
               @addPoint="addPointHandle"
               @change="changePointHandle"
-              @cancel="cancelPointHandle">
+              @cancel="cancelPointHandle"
+              @delPoint="delPointHandle">
           </HotSpot>
         </div>
       </div>
@@ -294,8 +295,17 @@ export default {
       this.activePoint = this._.cloneDeep(data);
       this.setActivePoint(data);
     },
-    // 取消选中的热力图
+    // 取消选中的热点
     cancelPointHandle() {
+      this.activePoint = {};
+    },
+    // 删除热点
+    delPointHandle() {
+      const points = this.doc.scenes[this.activeIndex].hotSpots;
+      const index = points.findIndex(item => {
+        return item.id === this.activePoint.id
+      })
+      points.splice(index, 1)
       this.activePoint = {};
     },
     // 生成缩略图

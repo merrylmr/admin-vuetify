@@ -7,7 +7,7 @@
       :overlay-opacity="0.8"
       @click:outside="closeHandle">
     <v-card class="preview-wrapper">
-      <!--      <v-card-title>作品预览</v-card-title>-->
+<!--      <v-card-title>作品预览</v-card-title>-->
       <div id="preview">
       </div>
       <div class="hot-point__list"
@@ -16,10 +16,26 @@
              :style="transformStyle(item.pos,item)"
              v-for="(item,index) in hotPointList"
              :key="index">
-          <!--场景说明   -->
+          <!--场景说明-->
           <div class="item__label"
                @click="pointLabelClickHandle(item)">
             {{ _.get(item, 'title.label') }}
+          </div>
+        </div>
+      </div>
+
+      <!--场景列表-->
+      <div class="scene-list">
+        <div class="scene-item"
+             :class="{'is-active':index===activeIndex}"
+             v-for="(item,index) in doc.scenes"
+             :key="index"
+             @click="changeSceneHandle(item,index)">
+          <div class="scene-item__thumbnail">
+            <img :src="item.url">
+          </div>
+          <div class="scene-item__label">
+            {{ item.name }}
           </div>
         </div>
       </div>
@@ -33,7 +49,11 @@ import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
 
 import {pointInSceneView, worldVector2Screen} from '../common.js'
 import {randomString} from '@/assets/js/utils.js'
+import gsap from 'gsap';
 
+// TODO: 初始化的动画过渡
+// TODO:requestAnimationFrame:替换掉change
+// TODO: 代码优化
 export default {
   name: 'preview-dlg',
   props: {
@@ -60,7 +80,8 @@ export default {
       poiObjects: [],
       // 热点原始数据
       hotPointList: [],
-      uniqueId: ''
+      uniqueId: '',
+      activeIndex: 0
     }
   },
   computed: {
@@ -93,18 +114,46 @@ export default {
       return Math.PI / 180 * deg
     },
     // 切换场景
-    async changeSceneHandle(data) {
+    async changeSceneHandle(data, index) {
+      this.activeIndex = index;
+      // 清空场景的元素（热点）
+      this.scene.children = this.scene.children.filter(item => {
+        return item.type !== 'Sprite'
+      })
+
+
       console.log('changeSceneHandle data', data)
       if (data.sphere) {
+        data.sphere.opacity = 0;
+        data.sphere.transparent = true;
         this.sphere.material = data.sphere;
       } else {
         // TODO:切换场景这里，可增加动画过渡（https://juejin.cn/post/7047709128600322056#heading-13）
-        // gsap.to
         const texture = await this.textureLoaderHandle(data.url);
-        const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
+        const sphereMaterial = new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          opacity: 0,
+        });
         this.sphere.material = sphereMaterial;
         data.sphere = sphereMaterial;
       }
+
+      gsap.to(data.sphere, {
+        transparent: true,
+        opacity: 1,
+        duration: 1.5,
+        onComplete: async () => {
+          // 重新渲染热点
+          data.sphere.transparent = false;
+          this.poiObjects = await this.renderPoint(this.scene, data.hotSpots);
+          this.renderer.render(this.scene, this.camera);
+        },
+        onUpdate: () => {
+          // 当动画发生改变时(动画进行中的每一帧)不停的触发此事件
+          this.renderer.render(this.scene, this.camera);
+        }
+      });
       // 相机位置
       const cameraPos = data.cameraPos;
       this.camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
@@ -191,10 +240,14 @@ export default {
     },
     // 寻找目标场景
     findTargetScene(id) {
-      const target = this.doc.scenes.find(item => {
+      let i = -1;
+      const target = this.doc.scenes.find((item, index) => {
+        if (item.id === id) {
+          i = index;
+        }
         return item.id === id
       })
-      return target
+      return {scene: target, index: i}
     },
 
     async init(data = this.doc.scenes[0]) {
@@ -231,19 +284,12 @@ export default {
     },
     // 点击热点的文字说明
     async pointLabelClickHandle(detail) {
-      // 清空场景的元素（热点）
-      this.scene.children = this.scene.children.filter(item => {
-        return item.type !== 'Sprite'
-      })
       switch (detail.hotType) {
         case 'scene': {
           // 切换场景
-          const scene = this.findTargetScene(detail.value);
+          const {scene, index} = this.findTargetScene(detail.value);
           if (scene) {
-            // 重新渲染热点
-            this.poiObjects = await this.renderPoint(this.scene, scene.hotSpots);
-            // 切换场景
-            this.changeSceneHandle(scene);
+            this.changeSceneHandle(scene, index)
           }
         }
           break;
@@ -325,6 +371,50 @@ export default {
     transform: translate(-50%, -100%);
     word-break: keep-all;
     cursor: pointer;
+  }
+}
+
+.scene-list {
+  position: absolute;
+  width: 100%;
+  bottom: 20px;
+  left: 50%;
+  transform: translate(-50%, 0);
+  @include flex(center);
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.scene-item {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  margin-right: 15px;
+  border: 2px solid #fff;
+  cursor: pointer;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &__thumbnail {
+    height: 100%;
+  }
+
+  &__label {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 3px;
+    left: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    text-align: center;
+  }
+
+  &.is-active {
+    border-color: $--color-primary;
   }
 }
 </style>
