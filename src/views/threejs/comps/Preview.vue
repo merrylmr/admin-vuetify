@@ -1,46 +1,38 @@
 <template>
-  <v-dialog
-      max-width="800px"
-      width="800px"
-      :fullscreen="false"
-      :value="visible"
-      :overlay-opacity="0.8"
-      @click:outside="closeHandle">
-    <v-card class="preview-wrapper">
-<!--      <v-card-title>作品预览</v-card-title>-->
-      <div id="preview">
-      </div>
-      <div class="hot-point__list"
-           :key="uniqueId">
-        <div class="hot-point__item"
-             :style="transformStyle(item.pos,item)"
-             v-for="(item,index) in hotPointList"
-             :key="index">
-          <!--场景说明-->
-          <div class="item__label"
-               @click="pointLabelClickHandle(item)">
-            {{ _.get(item, 'title.label') }}
-          </div>
+  <v-card class="preview-wrapper">
+    <!--      <v-card-title>作品预览</v-card-title>-->
+    <div id="preview">
+    </div>
+    <div class="hot-point__list"
+         :key="uniqueId">
+      <div class="hot-point__item"
+           :style="transformStyle(item.pos,item)"
+           v-for="(item,index) in hotPointList"
+           :key="index">
+        <!--场景说明-->
+        <div class="item__label"
+             @click="pointLabelClickHandle(item)">
+          {{ _.get(item, 'title.label') }}
         </div>
       </div>
+    </div>
 
-      <!--场景列表-->
-      <div class="scene-list">
-        <div class="scene-item"
-             :class="{'is-active':index===activeIndex}"
-             v-for="(item,index) in doc.scenes"
-             :key="index"
-             @click="changeSceneHandle(item,index)">
-          <div class="scene-item__thumbnail">
-            <img :src="item.url">
-          </div>
-          <div class="scene-item__label">
-            {{ item.name }}
-          </div>
+    <!--场景列表-->
+    <div class="scene-list">
+      <div class="scene-item"
+           :class="{'is-active':index===activeIndex}"
+           v-for="(item,index) in doc.scenes"
+           :key="index"
+           @click="changeSceneHandle(item,index)">
+        <div class="scene-item__thumbnail">
+          <img :src="item.url">
+        </div>
+        <div class="scene-item__label">
+          {{ item.name }}
         </div>
       </div>
-    </v-card>
-  </v-dialog>
+    </div>
+  </v-card>
 </template>
 
 <script>
@@ -50,7 +42,7 @@ import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
 import {pointInSceneView, worldVector2Screen} from '../common.js'
 import {randomString} from '@/assets/js/utils.js'
 import gsap from 'gsap';
-
+import docJSON from 'json/doc.json'
 // TODO: 初始化的动画过渡
 // TODO:requestAnimationFrame:替换掉change
 // TODO: 代码优化
@@ -63,9 +55,7 @@ export default {
     doc: {
       type: Object,
       default: () => {
-        return {
-          scenes: []
-        }
+        return docJSON
       }
     }
   },
@@ -121,7 +111,7 @@ export default {
         return item.type !== 'Sprite'
       })
 
-
+      this.hotPointList = []
       console.log('changeSceneHandle data', data)
       if (data.sphere) {
         data.sphere.opacity = 0;
@@ -140,12 +130,11 @@ export default {
       }
 
       gsap.to(data.sphere, {
-        transparent: true,
+        transparent: false,
         opacity: 1,
         duration: 1.5,
         onComplete: async () => {
           // 重新渲染热点
-          data.sphere.transparent = false;
           this.poiObjects = await this.renderPoint(this.scene, data.hotSpots);
           this.renderer.render(this.scene, this.camera);
         },
@@ -159,35 +148,6 @@ export default {
       this.camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
       // important:通过参数更新相机位置，必须调用controls的update才会生效
       this.controls.update();
-    },
-
-    async renderScene(data) {
-      const container = document.getElementById('preview');
-      const width = container.clientWidth;
-      const height = container.clientHeight;
-
-      const renderer = new THREE.WebGLRenderer();
-      renderer.setPixelRatio(window.devicePixelRatio);
-      renderer.setSize(width, height)
-      container.appendChild(renderer.domElement)
-
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(data.params.fov, width / height, data.params.near, data.params.far);
-      camera.position.x = data.cameraPos.x;
-      camera.position.y = data.cameraPos.y;
-      camera.position.z = data.cameraPos.z;
-
-
-      const controls = new OrbitControls(camera, renderer.domElement);
-
-
-      const texture = await this.textureLoaderHandle(data.url)
-      const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
-      const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
-      sphereGeometry.scale(1, 1, -1);
-      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-      scene.add(sphere)
-      return {renderer, controls, camera, scene, container, sphere}
     },
 
     textureLoaderHandle(url) {
@@ -217,7 +177,6 @@ export default {
         const item = hotPoints[i];
         // 这里加载是一个异步的过程
         const pointTexture = await this.textureLoaderHandle(item.iconPath)
-        console.log('renderPoint pointTexture:', pointTexture)
         const material = new THREE.SpriteMaterial(
             {
               map: pointTexture,
@@ -250,37 +209,80 @@ export default {
       return {scene: target, index: i}
     },
 
+    initScene() {
+      const scene = new THREE.Scene();
+      this.scene = scene;
+    },
+
+    initCamera(element, data) {
+      const width = element.clientWidth;
+      const height = element.clientHeight;
+      const camera = new THREE.PerspectiveCamera(data.params.fov, width / height, data.params.near, data.params.far);
+      camera.position.x = data.cameraPos.x;
+      camera.position.y = data.cameraPos.y;
+      camera.position.z = data.cameraPos.z;
+      this.camera = camera;
+    },
+
+    initRenderer(element) {
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(element.clientWidth, element.clientHeight)
+      element.appendChild(renderer.domElement)
+      this.renderer = renderer
+    },
+    initControls() {
+      const controls = new OrbitControls(this.camera, this.renderer.domElement);
+      this.controls = controls;
+    },
+
+    async initContent(data, fn) {
+      const texture = await this.textureLoaderHandle(data.url)
+      const sphereMaterial = new THREE.MeshBasicMaterial(
+          {
+            map: texture,
+            transparent: true,
+            opacity: 0,
+          });
+      gsap.to(sphereMaterial, {
+        transparent: false,
+        opacity: 1,
+        duration: 1.5,
+        onComplete: () => {
+          // 动画执行完成：渲染热点
+          fn && fn()
+        },
+        onUpdate: () => {
+          this.renderer.render(this.scene, this.camera);
+        },
+      })
+      const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
+      sphereGeometry.scale(1, 1, -1);
+      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      this.scene.add(sphere)
+      this.sphere = sphere;
+    },
+
     async init(data = this.doc.scenes[0]) {
       const points = data.hotSpots
-      // 渲染场景
-      const {
-        renderer,
-        controls,
-        scene,
-        camera,
-        container,
-        sphere
-      } = await this.renderScene(data)
-      this.renderer = renderer;
-      this.controls = controls;
-      this.scene = scene;
-      this.camera = camera;
+      const container = document.getElementById('preview');
       this.container = container;
-      this.sphere = sphere;
-      // 渲染热点
-      this.poiObjects = await this.renderPoint(scene, points)
+      this.initScene();
+      this.initCamera(container, data);
+      this.initRenderer(container);
+      this.initControls(container);
+      // 等待内容渲染完成，才去渲染热点
+      this.initContent(data, async () => {
+        // 渲染热点
+        this.poiObjects = await this.renderPoint(this.scene, points)
+        this.render();
+      })
 
-      // 渲染热点上的文字说明
-      const _this = this;
-
-      function render() {
-        renderer.render(scene, camera);
-        //  获取当前视觉的坐标（x,y,z）
-        _this.uniqueId = randomString()
-      }
-
-      render();
-      controls.addEventListener('change', render);
+      this.controls.addEventListener('change', this.render);
+    },
+    render() {
+      this.renderer.render(this.scene, this.camera);
+      this.uniqueId = randomString();
     },
     // 点击热点的文字说明
     async pointLabelClickHandle(detail) {
@@ -324,18 +326,35 @@ export default {
 
         this.pointLabelClickHandle(detail)
       }
+    },
+
+    resizeHandle() {
+      const width = this.container.clientWidth;
+      const height = this.container.clientHeight;
+      this.renderer.setSize(width, height);
+      //窗口宽高比
+      this.camera.aspect = width / height;
+      this.camera.updateProjectionMatrix();
+      this.uniqueId = randomString();
     }
   },
   mounted() {
     this.$nextTick(async () => {
       await this.init();
       this.container.addEventListener('click', this.pointClickHandle, false)
+      window.addEventListener('resize', this.resizeHandle)
     })
   }
 }
 </script>
 
 <style scoped lang="scss">
+.preview-dlg {
+  #preview {
+    height: 400px;
+  }
+}
+
 .preview-wrapper {
   position: relative;
   overflow: hidden;
@@ -343,7 +362,7 @@ export default {
 
 #preview {
   width: 100%;
-  height: 400px;
+  height: 100vh;
 }
 
 .hot-point__list {

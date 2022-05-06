@@ -127,6 +127,11 @@ const routes = [
         ]
     },
     {
+        path: '/preview',
+        name: 'preview',
+        component: () => import('@/views/threejs/comps/Preview.vue')
+    },
+    {
         path: '/demo1',
         component: () => import ('@/views/threejs/Demo1.vue'),
         name: 'demo1',

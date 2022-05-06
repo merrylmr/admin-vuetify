@@ -179,12 +179,22 @@
         </div>
       </div>
     </div>
-    <PreviewDlg
+    <!--预览弹窗-->
+
+    <v-dialog
         v-if="isShowPreviewDlg"
-        :visible="isShowPreviewDlg"
-        :doc="doc"
-        @close="isShowPreviewDlg=false">
-    </PreviewDlg>
+        max-width="800px"
+        width="800px"
+        :fullscreen="false"
+        :value="isShowPreviewDlg"
+        :overlay-opacity="0.8"
+        content-class="preview-dlg"
+        @click:outside="isShowPreviewDlg=false">
+      <PreviewDlg
+          :doc="doc"
+      >
+      </PreviewDlg>
+    </v-dialog>
   </div>
 </template>
 
@@ -201,7 +211,7 @@ import {ICON_MAP} from '@/assets/js/const.js'
 import docJSON from 'json/doc.json'
 import {randomString} from '@/assets/js/utils.js'
 
-import {worldVector2Screen, pointInSceneView, screenVector2World} from './common.js'
+import {pointInSceneView, screenVector2World, worldVector2Screen} from './common.js'
 
 export default {
   name: 'editor-3d',
@@ -549,8 +559,8 @@ export default {
         const width = container.clientWidth;
         const height = container.clientHeight;
         renderer.setSize(width, height);
-        const k = width / width;//窗口宽高比
-        camera.aspect = k;
+        //窗口宽高比
+        camera.aspect = width / height;
         camera.updateProjectionMatrix();
       }
 
@@ -792,4 +802,6 @@ export default {
     color: #666;
   }
 }
+
+
 </style>
