@@ -60,6 +60,7 @@
                 v-show="form.iconType==='custom'"
                 label="图标地址"
                 v-model="form.iconPath"
+                @change="changeHandle"
                 placeholder="请输入图标链接">
             </v-text-field>
             <v-subheader>图标大小</v-subheader>

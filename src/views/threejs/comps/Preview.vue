@@ -105,6 +105,7 @@ export default {
     },
     // 切换场景
     async changeSceneHandle(data, index) {
+      if (this.activeIndex === index) return
       this.activeIndex = index;
       // 清空场景的元素（热点）
       this.scene.children = this.scene.children.filter(item => {
@@ -136,11 +137,6 @@ export default {
         onComplete: async () => {
           // 重新渲染热点
           this.poiObjects = await this.renderPoint(this.scene, data.hotSpots);
-          this.renderer.render(this.scene, this.camera);
-        },
-        onUpdate: () => {
-          // 当动画发生改变时(动画进行中的每一帧)不停的触发此事件
-          this.renderer.render(this.scene, this.camera);
         }
       });
       // 相机位置
@@ -181,7 +177,7 @@ export default {
             {
               map: pointTexture,
               // 关闭大小跟随相机距离变化的特性
-              sizeAttenuation: false
+              sizeAttenuation: false,
             });
         const sprite = new THREE.Sprite(material);
 
@@ -189,11 +185,16 @@ export default {
         sprite.scale.x = scaleX;
         sprite.scale.y = scaleY;
         const position = hotPoints[i].pos
+
         sprite.position.set(position.x, position.y, position.z)
 
+        // TODO: 更新位置
         sprite.detail = item
+        sprite.name = 'Sprite'
         poiObjects.push(sprite);
+        // 添加到场景中
         scene.add(sprite);
+
       }
       return poiObjects
     },
@@ -252,9 +253,9 @@ export default {
           // 动画执行完成：渲染热点
           fn && fn()
         },
-        onUpdate: () => {
-          this.renderer.render(this.scene, this.camera);
-        },
+        // onUpdate: () => {
+        //   this.renderer.render(this.scene, this.camera);
+        // },
       })
       const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
       sphereGeometry.scale(1, 1, -1);
@@ -264,7 +265,7 @@ export default {
     },
 
     async init(data = this.doc.scenes[0]) {
-      const points = data.hotSpots
+      this.clock = new THREE.Clock();
       const container = document.getElementById('preview');
       this.container = container;
       this.initScene();
@@ -274,15 +275,21 @@ export default {
       // 等待内容渲染完成，才去渲染热点
       this.initContent(data, async () => {
         // 渲染热点
+        const points = data.hotSpots
         this.poiObjects = await this.renderPoint(this.scene, points)
+        await this.spriteRender()
         this.render();
       })
 
-      this.controls.addEventListener('change', this.render);
+
+      this.controls.addEventListener('change', () => {
+        this.uniqueId = randomString();
+      });
     },
     render() {
       this.renderer.render(this.scene, this.camera);
-      this.uniqueId = randomString();
+      this.updateHandle()
+      requestAnimationFrame(this.render);
     },
     // 点击热点的文字说明
     async pointLabelClickHandle(detail) {
@@ -336,6 +343,86 @@ export default {
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
       this.uniqueId = randomString();
+    },
+    // TODO:热点动画(Threejs帧动画模块)
+    // http://www.webgl3d.cn/Three.js/
+    pointAnimate(point) {
+      console.log('pointAnimate point:', point.position)
+      const times = [0, 60]; //关键帧时间数组，离散的时间点序列
+      const values = [0, 0, 0, 0, 1, 0]; //与时间点对应的值组成的数组
+      const posTrack = new THREE.KeyframeTrack('Sprite.position', times, values);
+      const duration = 20;
+
+      const clip = new THREE.AnimationClip("default", duration, [posTrack]);
+      const mixer = new THREE.AnimationMixer(point);
+      const AnimationAction = mixer.clipAction(clip);
+      AnimationAction.timeScale = 10;
+      AnimationAction.play();
+      this.mixer = mixer;
+    },
+    /**
+     *
+     * @param texture 贴图
+     * @param tilesHoriz 每个瓦片水平偏移量
+     * @param tilesVert 每个瓦片垂直偏移量
+     * @param numTiles 瓦片个数
+     * @param tileDispDuration
+     * @constructor
+     */
+    TextureAnimator(texture, tilesHoriz, tilesVert, numTiles, tileDispDuration) {
+      // note: texture passed by reference, will be updated by the update function.
+
+      this.tilesHorizontal = tilesHoriz;
+      this.tilesVertical = tilesVert;
+      // how many images does this spritesheet contain?
+      //  usually equals tilesHoriz * tilesVert, but not necessarily,
+      //  if there at blank tiles at the bottom of the spritesheet.
+      this.numberOfTiles = numTiles;
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(1 / this.tilesHorizontal, 1 / this.tilesVertical);
+
+      // how long should each image be displayed?
+      this.tileDisplayDuration = tileDispDuration;
+
+      // how long has the current image been displayed?
+      this.currentDisplayTime = 0;
+
+      // which image is currently being displayed?
+      this.currentTile = 0;
+
+      this.update = function (milliSec) {
+        this.currentDisplayTime += milliSec;
+
+        while (this.currentDisplayTime > this.tileDisplayDuration) {
+          this.currentDisplayTime -= this.tileDisplayDuration;
+          this.currentTile++;
+          if (this.currentTile === this.numberOfTiles) {
+            this.currentTile = 0;
+          }
+          const currentColumn = this.currentTile % this.tilesHorizontal;
+          texture.offset.x = currentColumn / this.tilesHorizontal;
+          const currentRow = Math.floor(this.currentTile / this.tilesHorizontal);
+          texture.offset.y = currentRow / this.tilesVertical;
+        }
+      };
+    },
+    // 参考文档：https://www.bbsmax.com/A/D854NYBxzE/
+    // 雪碧图渲染动画
+    async spriteRender() {
+      const runnerTexture = await this.textureLoaderHandle('img/run1.png');
+      this.annie = new this.TextureAnimator(runnerTexture, 10, 1, 10, 75); // texture, #horiz, #vert, #total, duration.
+      const runnerMaterial = new THREE.SpriteMaterial({
+        map: runnerTexture,
+        sizeAttenuation: false,
+      });
+      const runner = new THREE.Sprite(runnerMaterial);
+      runner.position.set(0, 0, -0.2);
+      // runner.scale.set(0.1, 0.1);
+      this.scene.add(runner);
+    },
+    updateHandle() {
+      const delta = this.clock.getDelta();
+      this.annie.update(1000 * delta);
     }
   },
   mounted() {
@@ -344,6 +431,8 @@ export default {
       this.container.addEventListener('click', this.pointClickHandle, false)
       window.addEventListener('resize', this.resizeHandle)
     })
+
+
   }
 }
 </script>
