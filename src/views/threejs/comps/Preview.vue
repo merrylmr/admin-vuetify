@@ -43,6 +43,8 @@ import {pointInSceneView, worldVector2Screen} from '../common.js'
 import {randomString} from '@/assets/js/utils.js'
 import gsap from 'gsap';
 import docJSON from 'json/doc.json'
+
+import {SYS_ICON_MAP} from '@/assets/js/const.js'
 // TODO: 初始化的动画过渡
 // TODO:requestAnimationFrame:替换掉change
 // TODO: 代码优化
@@ -71,7 +73,8 @@ export default {
       // 热点原始数据
       hotPointList: [],
       uniqueId: '',
-      activeIndex: 0
+      activeIndex: 0,
+      needUpdate: []
     }
   },
   computed: {
@@ -169,10 +172,24 @@ export default {
     async renderPoint(scene, hotPoints) {
       this.hotPointList = hotPoints;
       let poiObjects = [];
+      let needUpdate = [];
       for (let i = 0; i < hotPoints.length; i++) {
         const item = hotPoints[i];
+
         // 这里加载是一个异步的过程
-        const pointTexture = await this.textureLoaderHandle(item.iconPath)
+        let path = ''
+        if (item.gif) {
+          path = SYS_ICON_MAP[item.iconPath]
+        } else {
+          path = item.iconPath
+        }
+        const pointTexture = await this.textureLoaderHandle(path)
+        if (item.gif) {
+          const annie = new this.TextureAnimator(pointTexture, 1, 25, 25, 50)
+          needUpdate.push(annie);
+        }
+
+
         const material = new THREE.SpriteMaterial(
             {
               map: pointTexture,
@@ -196,6 +213,7 @@ export default {
         scene.add(sprite);
 
       }
+      this.needUpdate = needUpdate;
       return poiObjects
     },
     // 寻找目标场景
@@ -277,7 +295,7 @@ export default {
         // 渲染热点
         const points = data.hotSpots
         this.poiObjects = await this.renderPoint(this.scene, points)
-        await this.spriteRender()
+        // await this.spriteRender()
         this.render();
       })
 
@@ -363,8 +381,8 @@ export default {
     /**
      *
      * @param texture 贴图
-     * @param tilesHoriz 每个瓦片水平偏移量
-     * @param tilesVert 每个瓦片垂直偏移量
+     * @param tilesHoriz 水平多少个
+     * @param tilesVert 有多少行瓦片
      * @param numTiles 瓦片个数
      * @param tileDispDuration
      * @constructor
@@ -388,16 +406,16 @@ export default {
       this.currentDisplayTime = 0;
 
       // which image is currently being displayed?
-      this.currentTile = 0;
+      this.currentTile = this.numberOfTiles;
 
       this.update = function (milliSec) {
         this.currentDisplayTime += milliSec;
 
         while (this.currentDisplayTime > this.tileDisplayDuration) {
           this.currentDisplayTime -= this.tileDisplayDuration;
-          this.currentTile++;
-          if (this.currentTile === this.numberOfTiles) {
-            this.currentTile = 0;
+          this.currentTile--;
+          if (this.currentTile === 0) {
+            this.currentTile = this.numberOfTiles;
           }
           const currentColumn = this.currentTile % this.tilesHorizontal;
           texture.offset.x = currentColumn / this.tilesHorizontal;
@@ -408,21 +426,26 @@ export default {
     },
     // 参考文档：https://www.bbsmax.com/A/D854NYBxzE/
     // 雪碧图渲染动画
-    async spriteRender() {
-      const runnerTexture = await this.textureLoaderHandle('img/run1.png');
-      this.annie = new this.TextureAnimator(runnerTexture, 10, 1, 10, 75); // texture, #horiz, #vert, #total, duration.
+    async spriteRender(item) {
+      const runnerTexture = await this.textureLoaderHandle(item.iconPath);
+      this.annie = new this.TextureAnimator(runnerTexture, 1, 25, 25, 75); // texture, #horiz, #vert, #total, duration.
       const runnerMaterial = new THREE.SpriteMaterial({
         map: runnerTexture,
         sizeAttenuation: false,
       });
       const runner = new THREE.Sprite(runnerMaterial);
       runner.position.set(0, 0, -0.2);
-      // runner.scale.set(0.1, 0.1);
+      const {scaleX, scaleY} = this.calcSpriteScale(item)
+      runner.scale.set(scaleX, scaleY);
       this.scene.add(runner);
     },
     updateHandle() {
-      const delta = this.clock.getDelta();
-      this.annie.update(1000 * delta);
+      this.needUpdate.forEach(item => {
+        const delta = this.clock.getDelta();
+        item.update(1000 * delta);
+      })
+
+
     }
   },
   mounted() {

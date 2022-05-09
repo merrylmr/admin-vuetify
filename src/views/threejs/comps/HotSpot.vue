@@ -185,16 +185,20 @@ export default {
       sysIcons: [
         {
           key: 'forward',
-          url: 'img/new_spotd1_gif.png'
+          url: 'img/new_spotd1_gif.png',
+          gif: true
         },
         {
           key: 'left',
-          url: 'img/new_spotd2_gif.png'
-        }],
+          url: 'img/new_spotd2_gif.png',
+          gif: true
+        }
+      ],
       form: {
         iconType: 'sys',
         iconPath: 'img/new_spotd1_gif.png',
         iconSize: 80,
+        gif:true, // 是否是帧动画图
         hotType: 'scene',
         value: '',
         pos: {
@@ -243,6 +247,7 @@ export default {
   methods: {
     changeIconHandle(item) {
       this.form.iconPath = item.url
+      this.form.gif = item.gif
       this.changeHandle()
     },
     addPointHandle() {

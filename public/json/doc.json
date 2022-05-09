@@ -21,6 +21,7 @@
           "iconSize": 100,
           "iconPath": "img/new_spotd1_gif.png",
           "hotType": "scene",
+          "gif": true,
           "pos": {
             "x": 0,
             "y": 0,
@@ -60,6 +61,7 @@
           "iconSize": 100,
           "iconPath": "img/new_spotd2_gif.png",
           "hotType": "scene",
+          "gif": true,
           "pos": {
             "x": 0.03987949622495221,
             "y": 0.2988036522039401,
@@ -99,6 +101,7 @@
           "iconPath": "img/new_spotd2_gif.png",
           "iconSize": 100,
           "hotType": "scene",
+          "gif": true,
           "pos": {
             "x": 0.08906231671818418,
             "y": 0.05227008654042249,

@@ -9,3 +9,8 @@ export const ICON_MAP = {
     'forward': 'img/new_spotd1_gif.png',
     'left': 'img/new_spotd2_gif.png',
 }
+
+export const SYS_ICON_MAP = {
+    'img/new_spotd1_gif.png': 'img/arrow1.png',
+    'img/new_spotd2_gif.png': 'img/arrow2.png',
+}
