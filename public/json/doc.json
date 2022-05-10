@@ -8,7 +8,7 @@
       "params": {
         "near": 0.1,
         "far": 100,
-        "fov": 90,
+        "fov": 100,
         "minPolarAngle": -90,
         "maxPolarAngle": 90,
         "minAzimuthAngle": -180,

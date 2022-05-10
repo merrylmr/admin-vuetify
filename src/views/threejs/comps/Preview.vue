@@ -6,9 +6,9 @@
     <div class="hot-point__list"
          :key="uniqueId">
       <div class="hot-point__item"
-           :style="transformStyle(item.pos,item)"
            v-for="(item,index) in hotPointList"
-           :key="index">
+           :key="index"
+           :style="hotLabelStyleArr[index]">
         <!--场景说明-->
         <div class="item__label"
              @click="pointLabelClickHandle(item)">
@@ -40,7 +40,7 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
 
 import {pointInSceneView, worldVector2Screen, TextureAnimator} from '../common.js'
-import {randomString} from '@/assets/js/utils.js'
+// import {randomString} from '@/assets/js/utils.js'
 import gsap from 'gsap';
 import docJSON from 'json/doc.json'
 
@@ -74,7 +74,8 @@ export default {
       hotPointList: [],
       uniqueId: '',
       activeIndex: 0,
-      needUpdate: []
+      needUpdate: [],
+      hotLabelStyleArr: []
     }
   },
   computed: {
@@ -99,6 +100,33 @@ export default {
     },
   },
   methods: {
+    hotLabelStyles() {
+      const arr = [];
+      this.hotPointList.forEach(item => {
+        const visible = pointInSceneView(item.pos, this.camera)
+        if (visible) {
+          let pos = worldVector2Screen({
+            x: item.pos.x,
+            y: item.pos.y,
+            z: item.pos.z
+          }, this.container, this.camera);
+          arr.push({
+            transform: `translateZ(0px) translate(${pos.x}px,${pos.y}px) translate(-${item.iconSize / 2}px,-${item.iconSize / 2}px)`,
+            width: item.iconSize + 'px',
+            height: item.iconSize + 'px',
+            opacity: visible ? 1 : 0
+          })
+        } else {
+          arr.push({
+            width: item.iconSize + 'px',
+            height: item.iconSize + 'px',
+            opacity: 0
+          })
+        }
+
+      })
+      this.hotLabelStyleArr = arr;
+    },
     closeHandle() {
       this.$emit('close')
     },
@@ -140,10 +168,17 @@ export default {
         onComplete: async () => {
           // 重新渲染热点
           this.poiObjects = await this.renderPoint(this.scene, data.hotSpots);
+          this.hotLabelStyles()
         }
       });
       // 相机位置
       const cameraPos = data.cameraPos;
+
+      this.camera.fov = data.params.fov;
+      this.camera.near = data.params.near;
+      this.camera.far = data.params.far;
+      // 更新摄像机投影矩阵。在任何参数被改变以后必须被调用
+      this.camera.updateProjectionMatrix();
       this.camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
       // important:通过参数更新相机位置，必须调用controls的update才会生效
       this.controls.update();
@@ -160,11 +195,11 @@ export default {
     // 计算Sprite的缩放
     // https://segmentfault.com/a/1190000041644858
     // TODO: 这里还需要计算一个tan(fov/2)的值，默认90为1
-    calcSpriteScale(icon) {
+    calcSpriteScale(icon, fov = 90) {
       //  LScaleY = PX * (2 * tan(fov / 2)) / canvasHeight (高度)
       //  PX = L/(2*tan(fov/2))*canvasHeight => LScaleX =px* 2*tan(fov/2) / canvasHeight
-      const scaleY = icon.iconSize * 2 / this.container.clientHeight
-      const scaleX = icon.iconSize * 2 / this.container.clientHeight
+      const scaleY = icon.iconSize * 2 * Math.tan(fov / 2 * Math.PI / 180) / this.container.clientHeight
+      const scaleX = icon.iconSize * 2 * Math.tan(fov / 2 * Math.PI / 180) / this.container.clientHeight
       console.log('calcSpriteScale:', scaleX, scaleY)
       return {scaleX, scaleY}
     },
@@ -199,7 +234,7 @@ export default {
             });
         const sprite = new THREE.Sprite(material);
 
-        const {scaleX, scaleY} = this.calcSpriteScale(item)
+        const {scaleX, scaleY} = this.calcSpriteScale(item, this.camera.fov)
         sprite.scale.x = scaleX;
         sprite.scale.y = scaleY;
         const position = hotPoints[i].pos
@@ -235,9 +270,7 @@ export default {
       const width = element.clientWidth;
       const height = element.clientHeight;
       const camera = new THREE.PerspectiveCamera(data.params.fov, width / height, data.params.near, data.params.far);
-      camera.position.x = data.cameraPos.x;
-      camera.position.y = data.cameraPos.y;
-      camera.position.z = data.cameraPos.z;
+      camera.position.set(data.cameraPos.x, data.cameraPos.y, data.cameraPos.z)
       this.camera = camera;
     },
 
@@ -274,6 +307,7 @@ export default {
         // },
       })
       const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
+      // 贴图内翻
       sphereGeometry.scale(1, 1, -1);
       const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
       this.scene.add(sphere)
@@ -293,13 +327,16 @@ export default {
         // 渲染热点
         const points = data.hotSpots
         this.poiObjects = await this.renderPoint(this.scene, points)
+        this.hotLabelStyles();
         // await this.spriteRender()
         this.render();
       })
 
+      console.log('this.camera:', this.camera)
 
       this.controls.addEventListener('change', () => {
-        this.uniqueId = randomString();
+        // this.uniqueId = randomString();
+        this.hotLabelStyles();
       });
     },
     render() {
@@ -358,7 +395,8 @@ export default {
       //窗口宽高比
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
-      this.uniqueId = randomString();
+      // this.uniqueId = randomString();
+      this.hotLabelStyles()
     },
     /**
      *
@@ -417,7 +455,7 @@ export default {
       });
       const runner = new THREE.Sprite(runnerMaterial);
       runner.position.set(0, 0, -0.2);
-      const {scaleX, scaleY} = this.calcSpriteScale(item)
+      const {scaleX, scaleY} = this.calcSpriteScale(item, this.camera.fov)
       runner.scale.set(scaleX, scaleY);
       this.scene.add(runner);
     },

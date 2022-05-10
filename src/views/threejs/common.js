@@ -25,7 +25,6 @@ export function pointInSceneView(point, camera) {
     const tempV = point.applyMatrix4(camera.matrixWorldInverse).applyMatrix4(camera.projectionMatrix);
     if ((Math.abs(tempV.x) > 1) || (Math.abs(tempV.y) > 1) || (Math.abs(tempV.z) > 1)) {
         // 在视野外了
-        console.log('在视野外了在视野外了在视野外了在视野外了在视野外了在视野外了')
         return false
     } else {
         // 在视野内

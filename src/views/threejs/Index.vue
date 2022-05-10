@@ -91,80 +91,85 @@
             </div>
           </div>
           <div class="section">
-            <div class="section-title">视觉（FOV）范围设置</div>
+            <div class="section-title">视觉范围设置</div>
+            <v-text-field
+                label="初始视场（FOV）"
+                v-model.number="params.fov"
+                @change="changeFovParamsHandle">
+            </v-text-field>
             <v-range-slider
                 :min="0.1"
-                :max="180"
+                :max="2000"
                 :step="0.1"
                 :value="[params.near,params.far]"
                 @input="changeHandle($event,'fov')"
             ></v-range-slider>
             <v-row>
-              <v-col cols="4">
-                <v-text-field label="最近"
-                              v-model="params.near"></v-text-field>
+              <v-col cols="6">
+                <v-text-field
+                    label="最近(near)"
+                    v-model.number="params.near">
+                </v-text-field>
               </v-col>
-              <v-col cols="4">
-                <v-text-field label="初始"
-                              v-model="params.fov"></v-text-field>
-              </v-col>
-              <v-col cols="4">
-                <v-text-field label="最远"
-                              v-model="params.far"></v-text-field>
+              <v-col cols="6">
+                <v-text-field
+                    label="最远(far)"
+                    v-model.number="params.far">
+                </v-text-field>
               </v-col>
             </v-row>
             <!--  垂直视角限制         -->
           </div>
-          <div class="section">
-            <div class="section-title">
-              垂直视觉限制
-            </div>
-            <div class="section-content">
-              <v-range-slider
-                  :min="-90"
-                  :max="180"
-                  :value="[params.minPolarAngle,params.maxPolarAngle]"
-                  @input="changeHandle($event,'vertical')"
-              ></v-range-slider>
-              <v-row>
-                <v-col cols="6">
-                  <v-text-field
-                      label="最低"
-                      v-model="params.minPolarAngle"></v-text-field>
-                </v-col>
-                <v-col cols="6">
-                  <v-text-field
-                      label="最高"
-                      v-model="params.maxPolarAngle"></v-text-field>
-                </v-col>
-              </v-row>
-            </div>
-          </div>
-          <div class="section">
-            <div class="section-title">
-              水平视觉限制
-            </div>
-            <div class="section-content">
-              <v-range-slider
-                  :min="-180"
-                  :max="180"
-                  :value="[params.minAzimuthAngle,params.maxAzimuthAngle]"
-                  @input="changeHandle($event,'horizontal')"
-              ></v-range-slider>
-              <v-row>
-                <v-col cols="6">
-                  <v-text-field
-                      label="最左"
-                      v-model="params.minAzimuthAngle"></v-text-field>
-                </v-col>
-                <v-col cols="6">
-                  <v-text-field
-                      label="最右"
-                      v-model="params.maxAzimuthAngle"></v-text-field>
-                </v-col>
-              </v-row>
-            </div>
-          </div>
+          <!--          <div class="section">-->
+          <!--            <div class="section-title">-->
+          <!--              垂直视觉限制-->
+          <!--            </div>-->
+          <!--            <div class="section-content">-->
+          <!--              <v-range-slider-->
+          <!--                  :min="-90"-->
+          <!--                  :max="180"-->
+          <!--                  :value="[params.minPolarAngle,params.maxPolarAngle]"-->
+          <!--                  @input="changeHandle($event,'vertical')"-->
+          <!--              ></v-range-slider>-->
+          <!--              <v-row>-->
+          <!--                <v-col cols="6">-->
+          <!--                  <v-text-field-->
+          <!--                      label="最低"-->
+          <!--                      v-model="params.minPolarAngle"></v-text-field>-->
+          <!--                </v-col>-->
+          <!--                <v-col cols="6">-->
+          <!--                  <v-text-field-->
+          <!--                      label="最高"-->
+          <!--                      v-model="params.maxPolarAngle"></v-text-field>-->
+          <!--                </v-col>-->
+          <!--              </v-row>-->
+          <!--            </div>-->
+          <!--          </div>-->
+          <!--          <div class="section">-->
+          <!--            <div class="section-title">-->
+          <!--              水平视觉限制-->
+          <!--            </div>-->
+          <!--            <div class="section-content">-->
+          <!--              <v-range-slider-->
+          <!--                  :min="-180"-->
+          <!--                  :max="180"-->
+          <!--                  :value="[params.minAzimuthAngle,params.maxAzimuthAngle]"-->
+          <!--                  @input="changeHandle($event,'horizontal')"-->
+          <!--              ></v-range-slider>-->
+          <!--              <v-row>-->
+          <!--                <v-col cols="6">-->
+          <!--                  <v-text-field-->
+          <!--                      label="最左"-->
+          <!--                      v-model="params.minAzimuthAngle"></v-text-field>-->
+          <!--                </v-col>-->
+          <!--                <v-col cols="6">-->
+          <!--                  <v-text-field-->
+          <!--                      label="最右"-->
+          <!--                      v-model="params.maxAzimuthAngle"></v-text-field>-->
+          <!--                </v-col>-->
+          <!--              </v-row>-->
+          <!--            </div>-->
+          <!--          </div>-->
         </div>
         <div v-else-if="$route.name==='hot'">
           <HotSpot
@@ -251,7 +256,7 @@ export default {
       // 选中的热点
       activePoint: {},
       uniqueId: '',
-      // 透视相机参数
+      // 每个场景的透视相机参数
       params: {},
       sphere: null
     }
@@ -491,6 +496,7 @@ export default {
     // 切换场景
     async changeSceneHandle(index) {
       this.activeIndex = index;
+      this.params = this.doc.scenes[this.activeIndex].params;
       // 选中的热点置空
       this.activePoint = {};
       // TODO:当前的场景重新渲染 + 生成缩略图
@@ -505,6 +511,13 @@ export default {
         this.sphere.material = sphereMaterial;
         this.activeItem.shape = sphereMaterial;
       }
+
+      this.camera.fov = this.params.fov;
+      this.camera.near = this.params.near;
+      this.camera.far = this.params.far;
+      // 更新摄像机投影矩阵。在任何参数被改变以后必须被调用
+      this.camera.updateProjectionMatrix();
+
       // 相机位置
       const cameraPos = this.activeItem.cameraPos;
       this.camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
@@ -513,6 +526,16 @@ export default {
       this.renderer.render(this.scene, this.camera)
 
       this.createThumbnail();
+    },
+
+    // 修改相机的参数，更新像机投影矩阵
+    changeFovParamsHandle() {
+      this.camera.fov = this.params.fov;
+      this.camera.near = this.params.near;
+      this.camera.far = this.params.far;
+      // 更新摄像机投影矩阵。在任何参数被改变以后必须被调用
+      this.camera.updateProjectionMatrix();
+      this.renderer.render(this.scene, this.camera)
     },
 
     // 设置选中的热点
