@@ -268,7 +268,7 @@ export default {
         console.log('transformStyle pos:', pos)
         const visible = pointInSceneView(point, this.camera)
         return {
-          transform: `translateZ(0px) translate(${pos.x}px,${pos.y}px) translate(-40px,-40px)`,
+          transform: `translateZ(0px) translate(${pos.x}px,${pos.y}px) translate(-${item.iconSize / 2}px,-${item.iconSize / 2}px)`,
           width: item.iconSize + 'px',
           height: item.iconSize + 'px',
           opacity: visible ? 1 : 0
@@ -683,7 +683,7 @@ export default {
         position: absolute;
         top: 0;
         left: 50%;
-        transform: translate(-50%, -100%);
+        transform: translate(-50%, -50%);
         word-break: keep-all;
       }
     }

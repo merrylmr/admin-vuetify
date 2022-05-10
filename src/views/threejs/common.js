@@ -45,3 +45,56 @@ export function screenVector2World(point, dom, camera) {
     console.log('worldVector', worldVector)
     return worldVector
 }
+
+
+/**
+ *
+ * @param texture 贴图
+ * @param tilesHoriz 水平多少个
+ * @param tilesVert 有多少行瓦片
+ * @param numTiles 瓦片个数
+ * @param tileDispDuration
+ * @constructor
+ */
+export function TextureAnimator(texture, tilesHoriz, tilesVert, numTiles, tileDispDuration) {
+    // note: texture passed by reference, will be updated by the update function.
+
+    this.tilesHorizontal = tilesHoriz;
+    this.tilesVertical = tilesVert;
+    // how many images does this spritesheet contain?
+    //  usually equals tilesHoriz * tilesVert, but not necessarily,
+    //  if there at blank tiles at the bottom of the spritesheet.
+    this.numberOfTiles = numTiles;
+    // 设置阵列模式   默认ClampToEdgeWrapping  RepeatWrapping：阵列  镜像阵列：MirroredRepeatWrapping
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    // uv两个方向纹理重复数量(1,1/25)
+    texture.repeat.set(1 / this.tilesHorizontal, 1 / this.tilesVertical);
+
+    // how long should each image be displayed?
+    this.tileDisplayDuration = tileDispDuration;
+
+    // how long has the current image been displayed?
+    this.currentDisplayTime = 0;
+
+    // which image is currently being displayed?
+    this.currentTile = this.numberOfTiles;
+
+    this.update = function (milliSec) {
+        this.currentDisplayTime += milliSec;
+
+        while (this.currentDisplayTime > this.tileDisplayDuration) {
+            this.currentDisplayTime -= this.tileDisplayDuration;
+            this.currentTile--;
+            if (this.currentTile === 0) {
+                this.currentTile = this.numberOfTiles;
+            }
+
+            const currentColumn = this.currentTile % this.tilesHorizontal; // 0
+            texture.offset.x = currentColumn / this.tilesHorizontal; // 0
+
+            const currentRow = Math.floor(this.currentTile / this.tilesHorizontal); // this.currentTile
+
+            texture.offset.y = currentRow / this.tilesVertical; //  /25
+        }
+    };
+}

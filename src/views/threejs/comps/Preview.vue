@@ -39,7 +39,7 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
 
-import {pointInSceneView, worldVector2Screen} from '../common.js'
+import {pointInSceneView, worldVector2Screen, TextureAnimator} from '../common.js'
 import {randomString} from '@/assets/js/utils.js'
 import gsap from 'gsap';
 import docJSON from 'json/doc.json'
@@ -89,7 +89,7 @@ export default {
         console.log('transformStyle pos:', pos)
         const visible = pointInSceneView(point, this.camera)
         return {
-          transform: `translateZ(0px) translate(${pos.x}px,${pos.y}px) translate(-40px,-40px)`,
+          transform: `translateZ(0px) translate(${pos.x}px,${pos.y}px) translate(-${item.iconSize / 2}px,-${item.iconSize / 2}px)`,
           width: item.iconSize + 'px',
           height: item.iconSize + 'px',
           opacity: visible ? 1 : 0
@@ -176,16 +176,17 @@ export default {
       for (let i = 0; i < hotPoints.length; i++) {
         const item = hotPoints[i];
 
-        // 这里加载是一个异步的过程
+
         let path = ''
         if (item.gif) {
           path = SYS_ICON_MAP[item.iconPath]
         } else {
           path = item.iconPath
         }
+        // 这里加载是一个异步的过程
         const pointTexture = await this.textureLoaderHandle(path)
         if (item.gif) {
-          const annie = new this.TextureAnimator(pointTexture, 1, 25, 25, 50)
+          const annie = new TextureAnimator(pointTexture, 1, 25, 25, 50)
           needUpdate.push(annie);
         }
 
@@ -202,12 +203,9 @@ export default {
         sprite.scale.x = scaleX;
         sprite.scale.y = scaleY;
         const position = hotPoints[i].pos
-
+        // 位置信息
         sprite.position.set(position.x, position.y, position.z)
-
-        // TODO: 更新位置
         sprite.detail = item
-        sprite.name = 'Sprite'
         poiObjects.push(sprite);
         // 添加到场景中
         scene.add(sprite);
@@ -307,7 +305,7 @@ export default {
     render() {
       this.renderer.render(this.scene, this.camera);
       this.updateHandle()
-      requestAnimationFrame(this.render);
+      this.timer = requestAnimationFrame(this.render);
     },
     // 点击热点的文字说明
     async pointLabelClickHandle(detail) {
@@ -362,22 +360,6 @@ export default {
       this.camera.updateProjectionMatrix();
       this.uniqueId = randomString();
     },
-    // TODO:热点动画(Threejs帧动画模块)
-    // http://www.webgl3d.cn/Three.js/
-    pointAnimate(point) {
-      console.log('pointAnimate point:', point.position)
-      const times = [0, 60]; //关键帧时间数组，离散的时间点序列
-      const values = [0, 0, 0, 0, 1, 0]; //与时间点对应的值组成的数组
-      const posTrack = new THREE.KeyframeTrack('Sprite.position', times, values);
-      const duration = 20;
-
-      const clip = new THREE.AnimationClip("default", duration, [posTrack]);
-      const mixer = new THREE.AnimationMixer(point);
-      const AnimationAction = mixer.clipAction(clip);
-      AnimationAction.timeScale = 10;
-      AnimationAction.play();
-      this.mixer = mixer;
-    },
     /**
      *
      * @param texture 贴图
@@ -428,7 +410,7 @@ export default {
     // 雪碧图渲染动画
     async spriteRender(item) {
       const runnerTexture = await this.textureLoaderHandle(item.iconPath);
-      this.annie = new this.TextureAnimator(runnerTexture, 1, 25, 25, 75); // texture, #horiz, #vert, #total, duration.
+      this.annie = new TextureAnimator(runnerTexture, 1, 25, 25, 75); // texture, #horiz, #vert, #total, duration.
       const runnerMaterial = new THREE.SpriteMaterial({
         map: runnerTexture,
         sizeAttenuation: false,
@@ -440,12 +422,10 @@ export default {
       this.scene.add(runner);
     },
     updateHandle() {
+      const delta = this.clock.getDelta();
       this.needUpdate.forEach(item => {
-        const delta = this.clock.getDelta();
         item.update(1000 * delta);
       })
-
-
     }
   },
   mounted() {
@@ -454,8 +434,9 @@ export default {
       this.container.addEventListener('click', this.pointClickHandle, false)
       window.addEventListener('resize', this.resizeHandle)
     })
-
-
+  },
+  beforeDestroy() {
+    cancelAnimationFrame(this.timer)
   }
 }
 </script>
@@ -499,7 +480,7 @@ export default {
     position: absolute;
     top: 0;
     left: 50%;
-    transform: translate(-50%, -100%);
+    transform: translate(-50%, -50%);
     word-break: keep-all;
     cursor: pointer;
   }

@@ -16,6 +16,24 @@
       },
       "hotSpots": [
         {
+          "id": "5WGJjxAM7TTRNMwJ",
+          "iconType": "sys",
+          "iconPath": "img/new_spotd2_gif.png",
+          "iconSize": 80,
+          "hotType": "scene",
+          "gif": true,
+          "pos": {
+            "x": 0.0602026862144272,
+            "y": -0.21146735384612977,
+            "z": 0.25291271496787665
+          },
+          "title": {
+            "label": "场景3",
+            "show": true
+          },
+          "value": "xxx3"
+        },
+        {
           "id": "1",
           "iconType": "sys",
           "iconSize": 100,
@@ -30,6 +48,23 @@
           "value": "xxx2",
           "title": {
             "label": "场景二",
+            "show": true
+          }
+        },
+        {
+          "id": "HCesjXFb7fdaFxzD",
+          "iconType": "sys",
+          "iconPath": "img/new_spotd1.png",
+          "iconSize": 100,
+          "hotType": "scene",
+          "gif": false,
+          "pos": {
+            "x": 0.30524863764869775,
+            "y": 0.058727925811606255,
+            "z": -0.30855358923230314
+          },
+          "title": {
+            "label": "wwwww",
             "show": true
           }
         }
@@ -102,6 +137,12 @@
           "iconSize": 100,
           "hotType": "scene",
           "gif": true,
+          "texture": {
+            "tilesHoriz": 1,
+            "tilesVert": 25,
+            "numTiles": 25,
+            "tileDispDuration": 50
+          },
           "pos": {
             "x": 0.08906231671818418,
             "y": 0.05227008654042249,

@@ -41,6 +41,7 @@
                 v-model="form.iconType"
                 item-text="label"
                 item-value="value"
+                @change="changeIconTypeHandle"
                 label="图标">
             </v-select>
 
@@ -137,6 +138,7 @@
 <script>
 import {randomString} from '@/assets/js/utils.js'
 import SceneDlg from './Scene.vue'
+// TODO: 热点：自定义雪碧图
 export default {
   name: 'hot-spot',
   data() {
@@ -192,6 +194,10 @@ export default {
           key: 'left',
           url: 'img/new_spotd2_gif.png',
           gif: true
+        },
+        {
+          url: 'img/new_spotd1.png',
+          gif: false
         }
       ],
       form: {
@@ -250,6 +256,12 @@ export default {
       this.form.gif = item.gif
       this.changeHandle()
     },
+    changeIconTypeHandle() {
+      if (this.form.iconType) {
+        this.form.gif = false
+      }
+      this.changeHandle()
+    },
     addPointHandle() {
       this.drawer = true;
       this.form = {
@@ -258,6 +270,7 @@ export default {
         iconPath: 'img/new_spotd1_gif.png',
         iconSize: 80,
         hotType: 'scene',
+        gif: true,
         pos: {
           x: 0,
           y: 0,
