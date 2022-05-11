@@ -44,7 +44,6 @@ import {pointInSceneView, worldVector2Screen, TextureAnimator} from '../common.j
 import gsap from 'gsap';
 import docJSON from 'json/doc.json'
 
-import {SYS_ICON_MAP} from '@/assets/js/const.js'
 // TODO: 初始化的动画过渡
 // TODO:requestAnimationFrame:替换掉change
 // TODO: 代码优化
@@ -114,13 +113,14 @@ export default {
             transform: `translateZ(0px) translate(${pos.x}px,${pos.y}px) translate(-${item.iconSize / 2}px,-${item.iconSize / 2}px)`,
             width: item.iconSize + 'px',
             height: item.iconSize + 'px',
-            opacity: visible ? 1 : 0
+            visibility: 'visible'
           })
         } else {
           arr.push({
             width: item.iconSize + 'px',
             height: item.iconSize + 'px',
-            opacity: 0
+            visibility: 'hidden',
+            transform: `translateZ(0px) translate(-999999px,-999999px) translate(-${item.iconSize / 2}px,-${item.iconSize / 2}px)`,
           })
         }
 
@@ -134,7 +134,13 @@ export default {
     degToRad(deg) {
       return Math.PI / 180 * deg
     },
-    // 切换场景
+    /**
+     *
+     *  切换场景
+     *  @param data 场景数据对象
+     *  @param index 当前场景的索引值
+     *
+     */
     async changeSceneHandle(data, index) {
       if (this.activeIndex === index) return
       this.activeIndex = index;
@@ -144,13 +150,11 @@ export default {
       })
 
       this.hotPointList = []
-      console.log('changeSceneHandle data', data)
       if (data.sphere) {
         data.sphere.opacity = 0;
         data.sphere.transparent = true;
         this.sphere.material = data.sphere;
       } else {
-        // TODO:切换场景这里，可增加动画过渡（https://juejin.cn/post/7047709128600322056#heading-13）
         const texture = await this.textureLoaderHandle(data.url);
         const sphereMaterial = new THREE.MeshBasicMaterial({
           map: texture,
@@ -167,18 +171,18 @@ export default {
         duration: 1.5,
         onComplete: async () => {
           // 重新渲染热点
-          this.poiObjects = await this.renderPoint(this.scene, data.hotSpots);
+          this.poiObjects = await this.renderPointList(this.scene, data.hotSpots);
           this.hotLabelStyles()
         }
       });
-      // 相机位置
-      const cameraPos = data.cameraPos;
 
       this.camera.fov = data.params.fov;
       this.camera.near = data.params.near;
       this.camera.far = data.params.far;
       // 更新摄像机投影矩阵。在任何参数被改变以后必须被调用
       this.camera.updateProjectionMatrix();
+      // 相机位置
+      const cameraPos = data.cameraPos;
       this.camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z)
       // important:通过参数更新相机位置，必须调用controls的update才会生效
       this.controls.update();
@@ -203,48 +207,50 @@ export default {
       console.log('calcSpriteScale:', scaleX, scaleY)
       return {scaleX, scaleY}
     },
-    // 渲染热点(点击范围)
-    async renderPoint(scene, hotPoints) {
+    /** 渲染热点
+     * @param scene:场景
+     * @param item: 热点对象
+     */
+    async renderHotPoint(scene, item) {
+      const pointTexture = await this.textureLoaderHandle(item.iconPath)
+      let annie = null
+      if (item.gif) {
+        annie = new TextureAnimator(
+            pointTexture,
+            item.texture.horizontalNum,
+            item.texture.verticalNum,
+            item.texture.numTiles,
+            item.texture.duration)
+      }
+      const material = new THREE.SpriteMaterial(
+          {
+            map: pointTexture,
+            // 关闭大小跟随相机距离变化的特性
+            sizeAttenuation: false,
+          });
+      const sprite = new THREE.Sprite(material);
+      const {scaleX, scaleY} = this.calcSpriteScale(item, this.camera.fov)
+      sprite.scale.set(scaleX, scaleY);
+
+      // 位置信息
+      const position = item.pos
+      sprite.position.set(position.x, position.y, position.z)
+      sprite.detail = item
+      scene.add(sprite);
+      return {sprite, annie}
+    },
+    // 渲染热点列表(点击范围)
+    async renderPointList(scene, hotPoints) {
       this.hotPointList = hotPoints;
       let poiObjects = [];
       let needUpdate = [];
       for (let i = 0; i < hotPoints.length; i++) {
         const item = hotPoints[i];
-
-
-        let path = ''
-        if (item.gif) {
-          path = SYS_ICON_MAP[item.iconPath]
-        } else {
-          path = item.iconPath
-        }
-        // 这里加载是一个异步的过程
-        const pointTexture = await this.textureLoaderHandle(path)
-        if (item.gif) {
-          const annie = new TextureAnimator(pointTexture, 1, 25, 25, 50)
-          needUpdate.push(annie);
-        }
-
-
-        const material = new THREE.SpriteMaterial(
-            {
-              map: pointTexture,
-              // 关闭大小跟随相机距离变化的特性
-              sizeAttenuation: false,
-            });
-        const sprite = new THREE.Sprite(material);
-
-        const {scaleX, scaleY} = this.calcSpriteScale(item, this.camera.fov)
-        sprite.scale.x = scaleX;
-        sprite.scale.y = scaleY;
-        const position = hotPoints[i].pos
-        // 位置信息
-        sprite.position.set(position.x, position.y, position.z)
-        sprite.detail = item
+        const {sprite, annie} = await this.renderHotPoint(scene, item)
         poiObjects.push(sprite);
-        // 添加到场景中
-        scene.add(sprite);
-
+        if (annie) {
+          needUpdate.push(annie)
+        }
       }
       this.needUpdate = needUpdate;
       return poiObjects
@@ -286,26 +292,11 @@ export default {
       this.controls = controls;
     },
 
-    async initContent(data, fn) {
+    // TODO:添加loading特效
+    async initContent(data) {
       const texture = await this.textureLoaderHandle(data.url)
       const sphereMaterial = new THREE.MeshBasicMaterial(
-          {
-            map: texture,
-            transparent: true,
-            opacity: 0,
-          });
-      gsap.to(sphereMaterial, {
-        transparent: false,
-        opacity: 1,
-        duration: 1.5,
-        onComplete: () => {
-          // 动画执行完成：渲染热点
-          fn && fn()
-        },
-        // onUpdate: () => {
-        //   this.renderer.render(this.scene, this.camera);
-        // },
-      })
+          {map: texture});
       const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
       // 贴图内翻
       sphereGeometry.scale(1, 1, -1);
@@ -323,14 +314,12 @@ export default {
       this.initRenderer(container);
       this.initControls(container);
       // 等待内容渲染完成，才去渲染热点
-      this.initContent(data, async () => {
-        // 渲染热点
-        const points = data.hotSpots
-        this.poiObjects = await this.renderPoint(this.scene, points)
-        this.hotLabelStyles();
-        // await this.spriteRender()
-        this.render();
-      })
+      this.initContent(data)
+      // 渲染热点
+      const points = data.hotSpots
+      this.poiObjects = await this.renderPointList(this.scene, points)
+      this.hotLabelStyles();
+      this.render();
 
       console.log('this.camera:', this.camera)
 
@@ -444,21 +433,6 @@ export default {
         }
       };
     },
-    // 参考文档：https://www.bbsmax.com/A/D854NYBxzE/
-    // 雪碧图渲染动画
-    async spriteRender(item) {
-      const runnerTexture = await this.textureLoaderHandle(item.iconPath);
-      this.annie = new TextureAnimator(runnerTexture, 1, 25, 25, 75); // texture, #horiz, #vert, #total, duration.
-      const runnerMaterial = new THREE.SpriteMaterial({
-        map: runnerTexture,
-        sizeAttenuation: false,
-      });
-      const runner = new THREE.Sprite(runnerMaterial);
-      runner.position.set(0, 0, -0.2);
-      const {scaleX, scaleY} = this.calcSpriteScale(item, this.camera.fov)
-      runner.scale.set(scaleX, scaleY);
-      this.scene.add(runner);
-    },
     updateHandle() {
       const delta = this.clock.getDelta();
       this.needUpdate.forEach(item => {
@@ -508,6 +482,7 @@ export default {
 
 .hot-point__item {
   position: absolute;
+  visibility: hidden;
 
   .item__label {
     pointer-events: auto;

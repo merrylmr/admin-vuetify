@@ -10,15 +10,13 @@
     </div>
 
 
-    <v-navigation-drawer
+    <div
         transition="slide-x-reverse-transition"
         v-if="drawer"
-        v-model="drawer"
+        class="right-panel"
         height="100vh"
         :right="true"
         :hide-overlay="true"
-        absolute
-
         @input="toggleDrawerHandle"
     >
       <div class="pa-4">
@@ -51,7 +49,7 @@
                  v-show="form.iconType==='sys'">
               <div class="icon-item"
                    v-for="(item,index) in sysIcons"
-                   :class="{'is-active':form.iconPath===item.url}"
+                   :class="{'is-active':form.iconPath===item.spriteUrl}"
                    :key="index"
                    @click="changeIconHandle(item)">
                 <img :src="item.url">
@@ -123,7 +121,7 @@
           <v-btn @click="delPointHandle()">删除</v-btn>
         </div>
       </div>
-    </v-navigation-drawer>
+    </div>
     <SceneDlg
         v-if="isShowSceneDlg"
         :visible="isShowSceneDlg"
@@ -138,6 +136,7 @@
 <script>
 import {randomString} from '@/assets/js/utils.js'
 import SceneDlg from './Scene.vue'
+import {SYS_ICON_MAP} from '@/assets/js/const.js'
 // TODO: 热点：自定义雪碧图
 export default {
   name: 'hot-spot',
@@ -188,23 +187,44 @@ export default {
         {
           key: 'forward',
           url: 'img/new_spotd1_gif.png',
-          gif: true
+          spriteUrl: 'img/arrow1.png',
+          gif: true,
+          "texture": {
+            "horizontalNum": 1,
+            "verticalNum": 25,
+            "numTiles": 25,
+            "duration": 50
+          },
         },
         {
           key: 'left',
           url: 'img/new_spotd2_gif.png',
-          gif: true
+          spriteUrl: 'img/arrow2.png',
+          gif: true,
+          "texture": {
+            "horizontalNum": 1,
+            "verticalNum": 25,
+            "numTiles": 25,
+            "duration": 50
+          },
         },
         {
           url: 'img/new_spotd1.png',
+          spriteUrl: 'img/new_spotd1.png',
           gif: false
         }
       ],
       form: {
         iconType: 'sys',
-        iconPath: 'img/new_spotd1_gif.png',
+        iconPath: 'img/arrow1.png',
         iconSize: 80,
-        gif:true, // 是否是帧动画图
+        gif: true, // 是否是帧动画图
+        "texture": {
+          "horizontalNum": 1,
+          "verticalNum": 25,
+          "numTiles": 25,
+          "duration": 50
+        },
         hotType: 'scene',
         value: '',
         pos: {
@@ -252,8 +272,9 @@ export default {
   },
   methods: {
     changeIconHandle(item) {
-      this.form.iconPath = item.url
+      this.form.iconPath = SYS_ICON_MAP[item.url]
       this.form.gif = item.gif
+      this.form.texture = item.texture
       this.changeHandle()
     },
     changeIconTypeHandle() {
@@ -267,10 +288,16 @@ export default {
       this.form = {
         id: randomString(),
         iconType: 'sys',
-        iconPath: 'img/new_spotd1_gif.png',
+        iconPath: 'img/arrow1.png',
         iconSize: 80,
         hotType: 'scene',
         gif: true,
+        "texture": {
+          "horizontalNum": 1,
+          "verticalNum": 25,
+          "numTiles": 25,
+          "duration": 50
+        },
         pos: {
           x: 0,
           y: 0,
@@ -311,6 +338,7 @@ export default {
         this.form = this._.cloneDeep(n)
         if (n && n.id) {
           this.drawer = true;
+          console.log('activePoint n:', this.drawer)
         } else {
           this.drawer = false;
         }
@@ -371,5 +399,13 @@ export default {
   &__label {
     @include flex(space-between, center);
   }
+}
+
+.right-panel {
+  height: 100vh;
+  overflow-y: auto;
+  position: absolute;
+  top: 0;
+  background-color: #fff;
 }
 </style>

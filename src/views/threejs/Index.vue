@@ -53,7 +53,7 @@
                  v-for="(item,index) in hotSpots"
                  :style="transformStyle(item.pos,item)"
                  :key="index">
-              <img :src="item.iconPath">
+              <img :src="SYS_ICON_MAP1[item.iconPath]||item.iconPath">
               <!--      说明、注释渲染        -->
               <div class="point-item__label"
                    v-if="_.get(item,'title.show')">
@@ -210,7 +210,7 @@ import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
 import PreviewDlg from './comps/Preview.vue'
 import html2canvas from "html2canvas";
 import HotSpot from './comps/HotSpot.vue'
-import {ICON_MAP} from '@/assets/js/const.js'
+import {ICON_MAP, SYS_ICON_MAP1} from '@/assets/js/const.js'
 
 
 import docJSON from 'json/doc.json'
@@ -223,7 +223,7 @@ export default {
   data() {
     return {
       ICON_MAP,
-
+      SYS_ICON_MAP1,
       scene: null,
       renderer: null,
       camera: null,
@@ -599,6 +599,7 @@ export default {
 <style scoped lang="scss">
 .editor-3d {
   height: 100vh;
+  overflow: hidden;
 }
 
 .header {

@@ -1,5 +1,13 @@
 import * as THREE from "three";
 
+
+/**
+ *  世界坐标转屏幕坐标
+ * @param center threejs中的三维点
+ * @param dom  画布dom
+ * @param camera 相机
+ * @returns {{x: number, y: number}}
+ */
 export function worldVector2Screen(center, dom, camera) {
     const worldVector = new THREE.Vector3(
         center.x,
@@ -10,38 +18,41 @@ export function worldVector2Screen(center, dom, camera) {
     //  其值是限定在[-1,1]范围内的。
     // 参考文档：https://segmentfault.com/q/1010000013062310
     const stdVector = worldVector.project(camera);
-    const a = dom.clientWidth;
-    const b = dom.clientHeight;
+    const w = dom.clientWidth;
+    const h = dom.clientHeight;
 
-    const x = Math.round((0.5 + stdVector.x / 2) * (a));  //2
-    const y = Math.round((0.5 - stdVector.y / 2) * (b));
+    const x = Math.round((0.5 + stdVector.x / 2) * w);
+    const y = Math.round((0.5 - stdVector.y / 2) * h);
     return {x, y}
 }
 
 
-// 点位是否在场景可视范围区域
+/**
+ * 热点位是否在场景可视范围区域
+ * @param point threejs三维坐标点
+ * @param camera 相机
+ * @returns {boolean}
+ */
 export function pointInSceneView(point, camera) {
     point = new THREE.Vector3(point.x, point.y, point.z)
     const tempV = point.applyMatrix4(camera.matrixWorldInverse).applyMatrix4(camera.projectionMatrix);
-    if ((Math.abs(tempV.x) > 1) || (Math.abs(tempV.y) > 1) || (Math.abs(tempV.z) > 1)) {
-        // 在视野外了
-        return false
-    } else {
-        // 在视野内
-        return true
-    }
+    return !((Math.abs(tempV.x) > 1) || (Math.abs(tempV.y) > 1) || (Math.abs(tempV.z) > 1));
 }
 
 
-// 屏幕坐标转世界坐标
+/**
+ * 屏幕坐标转世界坐标
+ * @param point 屏幕上的一个坐标点
+ * @param dom 画布dom
+ * @param camera 相机
+ * @returns {Vector3}
+ */
 export function screenVector2World(point, dom, camera) {
-    console.log('point', point);
     const x = (point.x / dom.clientWidth) * 2 - 1;
     const y = -(point.y / dom.clientHeight) * 2 + 1;
     const stdVector = new THREE.Vector3(x, y, 0.5);
     // 将向量转成threejs坐标
     const worldVector = stdVector.unproject(camera);
-    console.log('worldVector', worldVector)
     return worldVector
 }
 
