@@ -32,6 +32,18 @@
         </div>
       </div>
     </div>
+    <!--  沙盘  -->
+    <div class="sand-table">
+      <div class="point"
+           @mousedown="sandMouseDownHandle"
+           :style="{transform:`rotate(${rotate}deg)`}">
+        <div class="circle"></div>
+        <div class="img">
+          <img src="img/sand.png">
+        </div>
+
+      </div>
+    </div>
   </v-card>
 </template>
 
@@ -74,7 +86,9 @@ export default {
       uniqueId: '',
       activeIndex: 0,
       needUpdate: [],
-      hotLabelStyleArr: []
+      hotLabelStyleArr: [],
+      rotate: 0,
+      targetPosition: new THREE.Vector3(0, 0, 0)
     }
   },
   computed: {
@@ -325,6 +339,9 @@ export default {
 
       this.controls.addEventListener('change', () => {
         // this.uniqueId = randomString();
+        console.log('camera:', this.camera)
+        console.log('getAzimuthalAngle ():', this.controls.getAzimuthalAngle() * 180 / Math.PI)
+        this.rotate = this.controls.getAzimuthalAngle() * 180 / Math.PI;
         this.hotLabelStyles();
       });
     },
@@ -387,57 +404,56 @@ export default {
       // this.uniqueId = randomString();
       this.hotLabelStyles()
     },
-    /**
-     *
-     * @param texture 贴图
-     * @param tilesHoriz 水平多少个
-     * @param tilesVert 有多少行瓦片
-     * @param numTiles 瓦片个数
-     * @param tileDispDuration
-     * @constructor
-     */
-    TextureAnimator(texture, tilesHoriz, tilesVert, numTiles, tileDispDuration) {
-      // note: texture passed by reference, will be updated by the update function.
-
-      this.tilesHorizontal = tilesHoriz;
-      this.tilesVertical = tilesVert;
-      // how many images does this spritesheet contain?
-      //  usually equals tilesHoriz * tilesVert, but not necessarily,
-      //  if there at blank tiles at the bottom of the spritesheet.
-      this.numberOfTiles = numTiles;
-      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(1 / this.tilesHorizontal, 1 / this.tilesVertical);
-
-      // how long should each image be displayed?
-      this.tileDisplayDuration = tileDispDuration;
-
-      // how long has the current image been displayed?
-      this.currentDisplayTime = 0;
-
-      // which image is currently being displayed?
-      this.currentTile = this.numberOfTiles;
-
-      this.update = function (milliSec) {
-        this.currentDisplayTime += milliSec;
-
-        while (this.currentDisplayTime > this.tileDisplayDuration) {
-          this.currentDisplayTime -= this.tileDisplayDuration;
-          this.currentTile--;
-          if (this.currentTile === 0) {
-            this.currentTile = this.numberOfTiles;
-          }
-          const currentColumn = this.currentTile % this.tilesHorizontal;
-          texture.offset.x = currentColumn / this.tilesHorizontal;
-          const currentRow = Math.floor(this.currentTile / this.tilesHorizontal);
-          texture.offset.y = currentRow / this.tilesVertical;
-        }
-      };
-    },
     updateHandle() {
       const delta = this.clock.getDelta();
       this.needUpdate.forEach(item => {
         item.update(1000 * delta);
       })
+    },
+    // https://blog.csdn.net/ningfeng8899/article/details/108419961
+    // TODO: 垂直方向上的未保持上一次的相机位置
+    rotate2cameraPos(angle) {
+      console.log('this.camera.position:', this._.cloneDeep(this.camera.position))
+      const position = this.camera.position
+      // y：控制镜头上下
+      this.targetPosition.y = position.y;
+      this.targetPosition.x = position.x + 0.1 * Math.sin(angle * Math.PI / 180);
+      this.targetPosition.z = position.z + 0.1 * Math.cos(angle * Math.PI / 180);
+      console.log('targetPosition', this._.cloneDeep(this.targetPosition))
+      // this.camera.lookAt(this.targetPosition);
+      this.controls.target = this.targetPosition;
+      this.controls.update()
+      console.log('this.camera.position after111:', this.camera.position)
+    },
+    sandMouseDownHandle() {
+      const dom = this.$el.querySelector('.point');
+      const domRect = dom.getBoundingClientRect();
+      const centerPos = {
+        x: domRect.width / 2 + domRect.x,
+        y: domRect.height / 2 + domRect.y,
+      }
+      let mouseMove = (e) => {
+        const curMouse = {
+          x: e.clientX,
+          y: e.clientY,
+        }
+        // https://blog.csdn.net/wjlhanhan/article/details/109668342
+        const radians = Math.atan2(curMouse.x - centerPos.x, curMouse.y - centerPos.y);
+        let angle = (radians * (180 / Math.PI) * -1)
+        // 沙盘旋转角度转化到相机
+        this.rotate2cameraPos(angle)
+        console.log('angle:', angle)
+      }
+
+      let mouseUp = () => {
+        // this.rotate2cameraPos(30)
+        console.log('mouseUp')
+        document.body.removeEventListener('mousemove', mouseMove)
+        document.body.removeEventListener('mouseup', mouseUp)
+      }
+
+      document.body.addEventListener('mousemove', mouseMove)
+      document.body.addEventListener('mouseup', mouseUp)
     }
   },
   mounted() {
@@ -540,6 +556,45 @@ export default {
 
   &.is-active {
     border-color: $--color-primary;
+  }
+}
+
+.sand-table {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 200px;
+  height: 200px;
+  border: 1px solid orange;
+  @include flex(center, center);
+
+  .point {
+    width: 128px;
+    height: 128px;
+    //@include flex(center, center);
+    position: relative;
+    //border: 1px solid orange;
+
+    .img {
+      @include flex(center, center);
+
+      img {
+        width: 64px;
+        height: 64px;
+        -webkit-user-drag: none;
+      }
+    }
+
+    .circle {
+      width: 20px;
+      height: 20px;
+      background-color: red;
+      border-radius: 50%;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
   }
 }
 </style>
