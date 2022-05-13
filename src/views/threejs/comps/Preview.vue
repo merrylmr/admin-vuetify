@@ -338,8 +338,7 @@ export default {
       console.log('this.camera:', this.camera)
 
       this.controls.addEventListener('change', () => {
-        // this.uniqueId = randomString();
-        console.log('camera:', this.camera)
+
         console.log('getAzimuthalAngle ():', this.controls.getAzimuthalAngle() * 180 / Math.PI)
         this.rotate = this.controls.getAzimuthalAngle() * 180 / Math.PI;
         this.hotLabelStyles();
@@ -410,20 +409,22 @@ export default {
         item.update(1000 * delta);
       })
     },
-    // https://blog.csdn.net/ningfeng8899/article/details/108419961
-    // TODO: 垂直方向上的未保持上一次的相机位置
+    // 已知水平角度，转化成相机的坐标
+    // https://www.wjceo.com/blog/threejs2/2018-12-05/181.html
     rotate2cameraPos(angle) {
-      console.log('this.camera.position:', this._.cloneDeep(this.camera.position))
-      const position = this.camera.position
-      // y：控制镜头上下
-      this.targetPosition.y = position.y;
-      this.targetPosition.x = position.x + 0.1 * Math.sin(angle * Math.PI / 180);
-      this.targetPosition.z = position.z + 0.1 * Math.cos(angle * Math.PI / 180);
-      console.log('targetPosition', this._.cloneDeep(this.targetPosition))
-      // this.camera.lookAt(this.targetPosition);
-      this.controls.target = this.targetPosition;
-      this.controls.update()
-      console.log('this.camera.position after111:', this.camera.position)
+      // 距离
+      const r = this.controls.object.position.distanceTo(this.controls.target);
+      // 垂直方向角度（y轴）
+      const phi = this.controls.getPolarAngle();
+      // 水平方向的角度（x轴）
+      const theta = angle * Math.PI / 180;
+      const controls = this.controls;
+      const x = r * Math.cos(phi - Math.PI / 2) * Math.sin(theta) + controls.target.x;
+      const y = r * Math.sin(phi + Math.PI / 2) + controls.target.y;
+      const z = r * Math.cos(phi - Math.PI / 2) * Math.cos(theta) + controls.target.z;
+      controls.object.position.set(x, y, z);
+      controls.object.lookAt(controls.target);
+      controls.update();
     },
     sandMouseDownHandle() {
       const dom = this.$el.querySelector('.point');
@@ -439,14 +440,12 @@ export default {
         }
         // https://blog.csdn.net/wjlhanhan/article/details/109668342
         const radians = Math.atan2(curMouse.x - centerPos.x, curMouse.y - centerPos.y);
-        let angle = (radians * (180 / Math.PI) * -1)
+        let angle = (radians * (180 / Math.PI) * -1) + 180
         // 沙盘旋转角度转化到相机
         this.rotate2cameraPos(angle)
-        console.log('angle:', angle)
       }
 
       let mouseUp = () => {
-        // this.rotate2cameraPos(30)
         console.log('mouseUp')
         document.body.removeEventListener('mousemove', mouseMove)
         document.body.removeEventListener('mouseup', mouseUp)
