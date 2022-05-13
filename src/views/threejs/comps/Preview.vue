@@ -56,9 +56,6 @@ import {pointInSceneView, worldVector2Screen, TextureAnimator} from '../common.j
 import gsap from 'gsap';
 import docJSON from 'json/doc.json'
 
-// TODO: 初始化的动画过渡
-// TODO:requestAnimationFrame:替换掉change
-// TODO: 代码优化
 export default {
   name: 'preview-dlg',
   props: {

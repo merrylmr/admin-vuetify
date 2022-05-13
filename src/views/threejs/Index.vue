@@ -29,7 +29,8 @@
           </li>
         </ul>
       </div>
-      <div class="stage">
+      <div class="stage"
+           v-loading="isLoading">
         <div class="wrapper">
           <div class="view-area"
                id="container">
@@ -94,6 +95,8 @@
             <div class="section-title">视觉范围设置</div>
             <v-text-field
                 label="初始视场（FOV）"
+                :max="179"
+                :min="1"
                 v-model.number="params.fov"
                 @change="changeFovParamsHandle">
             </v-text-field>
@@ -118,58 +121,7 @@
                 </v-text-field>
               </v-col>
             </v-row>
-            <!--  垂直视角限制         -->
           </div>
-          <!--          <div class="section">-->
-          <!--            <div class="section-title">-->
-          <!--              垂直视觉限制-->
-          <!--            </div>-->
-          <!--            <div class="section-content">-->
-          <!--              <v-range-slider-->
-          <!--                  :min="-90"-->
-          <!--                  :max="180"-->
-          <!--                  :value="[params.minPolarAngle,params.maxPolarAngle]"-->
-          <!--                  @input="changeHandle($event,'vertical')"-->
-          <!--              ></v-range-slider>-->
-          <!--              <v-row>-->
-          <!--                <v-col cols="6">-->
-          <!--                  <v-text-field-->
-          <!--                      label="最低"-->
-          <!--                      v-model="params.minPolarAngle"></v-text-field>-->
-          <!--                </v-col>-->
-          <!--                <v-col cols="6">-->
-          <!--                  <v-text-field-->
-          <!--                      label="最高"-->
-          <!--                      v-model="params.maxPolarAngle"></v-text-field>-->
-          <!--                </v-col>-->
-          <!--              </v-row>-->
-          <!--            </div>-->
-          <!--          </div>-->
-          <!--          <div class="section">-->
-          <!--            <div class="section-title">-->
-          <!--              水平视觉限制-->
-          <!--            </div>-->
-          <!--            <div class="section-content">-->
-          <!--              <v-range-slider-->
-          <!--                  :min="-180"-->
-          <!--                  :max="180"-->
-          <!--                  :value="[params.minAzimuthAngle,params.maxAzimuthAngle]"-->
-          <!--                  @input="changeHandle($event,'horizontal')"-->
-          <!--              ></v-range-slider>-->
-          <!--              <v-row>-->
-          <!--                <v-col cols="6">-->
-          <!--                  <v-text-field-->
-          <!--                      label="最左"-->
-          <!--                      v-model="params.minAzimuthAngle"></v-text-field>-->
-          <!--                </v-col>-->
-          <!--                <v-col cols="6">-->
-          <!--                  <v-text-field-->
-          <!--                      label="最右"-->
-          <!--                      v-model="params.maxAzimuthAngle"></v-text-field>-->
-          <!--                </v-col>-->
-          <!--              </v-row>-->
-          <!--            </div>-->
-          <!--          </div>-->
         </div>
         <div v-else-if="$route.name==='hot'">
           <HotSpot
@@ -184,8 +136,6 @@
         </div>
       </div>
     </div>
-    <!--预览弹窗-->
-
     <v-dialog
         v-if="isShowPreviewDlg"
         max-width="800px"
@@ -290,9 +240,6 @@ export default {
     },
   },
   methods: {
-    // 渲染注释
-    renderAnnotation() {
-    },
     // 添加热点：
     addPointHandle(data) {
       // 计算pos,当前窗口的中间位置
@@ -306,6 +253,7 @@ export default {
       this.doc.scenes[this.activeIndex].hotSpots.push(point);
       this.activePoint = point
     },
+    // 选中的热点属性变化
     changePointHandle(data) {
       this.activePoint = this._.cloneDeep(data);
       this.setActivePoint(data);
@@ -344,55 +292,22 @@ export default {
         });
       })
     },
+
     async init() {
       this.isLoading = true;
       const container = document.getElementById('container');
-
-      const width = container.clientWidth;
-      const height = container.clientHeight;
-      const renderer = new THREE.WebGLRenderer({
-        preserveDrawingBuffer: true
-      });
-      renderer.setPixelRatio(window.devicePixelRatio);
-      renderer.setSize(width, height)
-      container.appendChild(renderer.domElement)
-
-
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(this.params.fov, width / height, this.params.near, this.params.far);
-      camera.position.set(0, 0, 0.1)
-
-      this.camera = camera;
-
-      const controls = new OrbitControls(camera, renderer.domElement);
       this.container = container;
-      // controls.zoomSpeed = 0.5;
-      // controls.minPolarAngle = this.degToRad(this.params.minPolarAngle)
-      // controls.maxPolarAngle = this.degToRad(this.params.maxPolarAngle)
-      //
-      // controls.minAzimuthAngle = this.degToRad(this.params.minAzimuthAngle);
-      // controls.maxAzimuthAngle = this.degToRad(this.params.maxAzimuthAngle);
-
-
-      const texture = await this.textureLoaderHandle(this.activeItem.url)
-      const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
-
-      const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
-      sphereGeometry.scale(1, 1, -1);
-      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-      this.sphere = sphere
-      scene.add(sphere)
-      render();
+      const data = this.doc.scenes[0];
+      this.initScene();
+      this.initCamera(container, data);
+      this.initRenderer(container);
+      this.initControls(container);
+      await this.initContent(data)
+      this.render();
       this.isLoading = false;
-
-      function render() {
-        renderer.render(scene, camera);
-      }
-
-      // 辅助坐标系  参数250表示坐标系大小，可以根据场景大小去设置
-      const axisHelper = new THREE.AxisHelper(25000);
-      scene.add(axisHelper);
-      return {scene, camera, controls, renderer, container}
+    },
+    render() {
+      this.renderer.render(this.scene, this.camera);
     },
     // 角度转弧度
     degToRad(deg) {
@@ -553,41 +468,65 @@ export default {
 
     saveAction() {
       console.log('saveAction doc:', JSON.stringify(this.doc))
-    }
+    },
+    initScene() {
+      const scene = new THREE.Scene();
+      this.scene = scene;
+    },
+    initRenderer(element) {
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(element.clientWidth, element.clientHeight)
+      element.appendChild(renderer.domElement)
+      this.renderer = renderer
+    },
+
+    initCamera(element, data) {
+      const width = element.clientWidth;
+      const height = element.clientHeight;
+      const camera = new THREE.PerspectiveCamera(data.params.fov, width / height, data.params.near, data.params.far);
+      camera.position.set(data.cameraPos.x, data.cameraPos.y, data.cameraPos.z)
+      this.camera = camera;
+    },
+
+    initControls() {
+      const controls = new OrbitControls(this.camera, this.renderer.domElement);
+      this.controls = controls;
+    },
+
+    async initContent(data) {
+      const texture = await this.textureLoaderHandle(data.url)
+      const sphereMaterial = new THREE.MeshBasicMaterial(
+          {map: texture});
+      const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
+      // 贴图内翻
+      sphereGeometry.scale(1, 1, -1);
+      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      this.scene.add(sphere)
+      this.sphere = sphere;
+    },
+    resizeHandle() {
+      const width = this.container.clientWidth;
+      const height = this.container.clientHeight;
+      this.renderer.setSize(width, height);
+      //窗口宽高比
+      this.camera.aspect = width / height;
+      this.camera.updateProjectionMatrix();
+    },
 
   },
   mounted() {
     this.activeName = this.$route.name;
     this.params = this.doc.scenes[this.activeIndex].params;
-    this.$nextTick(async () => {
-      const {
-        scene,
-        camera,
-        controls,
-        renderer,
-        container
-      } = await this.init();
-      this.scene = scene;
-      this.renderer = renderer;
-      this.controls = controls;
-      this.container = container;
 
+    this.$nextTick(async () => {
+      await this.init();
       const changeHandle = () => {
         this.uniqueId = randomString()
-        renderer.render(scene, camera);
+        this.render()
       }
-      controls.addEventListener('change', changeHandle);
-
-      function resizeHandle() {
-        const width = container.clientWidth;
-        const height = container.clientHeight;
-        renderer.setSize(width, height);
-        //窗口宽高比
-        camera.aspect = width / height;
-        camera.updateProjectionMatrix();
-      }
-
-      window.addEventListener('resize', resizeHandle);
+      this.controls.addEventListener('change', changeHandle);
+      window.addEventListener('resize', this.resizeHandle);
       // 生成场景缩略图
       this.createThumbnail();
     })
