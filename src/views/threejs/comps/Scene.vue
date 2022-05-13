@@ -73,7 +73,7 @@ export default {
       this.selectedItem = item;
     },
     sureAction() {
-      this.$emit('sure', this.selectedItem.id)
+      this.$emit('sure', this.selectedItem)
     }
   },
   created() {

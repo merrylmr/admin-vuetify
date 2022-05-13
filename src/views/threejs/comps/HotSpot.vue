@@ -313,8 +313,8 @@ export default {
     toggleDrawerHandle(v) {
       console.log('toggleDrawerHandle:', v)
     },
-    sureHandle(id) {
-      this.form.value = id;
+    sureHandle(data) {
+      this.form.value = data.id;
       this.isShowSceneDlg = false;
       this.changeHandle();
     },

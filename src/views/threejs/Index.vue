@@ -29,8 +29,7 @@
           </li>
         </ul>
       </div>
-      <div class="stage"
-           v-loading="isLoading">
+      <div class="stage">
         <div class="wrapper">
           <div class="view-area"
                id="container">
@@ -59,6 +58,21 @@
               <div class="point-item__label"
                    v-if="_.get(item,'title.show')">
                 {{ item.title.label }}
+              </div>
+            </div>
+          </div>
+          <!-- 沙盘 -->
+          <div class="sand-table-box"
+               v-if="$route.name==='sandTable'"
+               id="sandTableBox">
+            <div class="img">
+              <img :src="doc.sandTable.url">
+            </div>
+            <div class="marker-list">
+              <div class="marker-item"
+                   v-for="(item,index) in doc.sandTable.markers"
+                   :key="index"
+                   :style="{left:item.pos.x+'px',top:item.pos.y+'px'}">
               </div>
             </div>
           </div>
@@ -134,6 +148,15 @@
               @delPoint="delPointHandle">
           </HotSpot>
         </div>
+        <!-- 沙盘 -->
+        <div v-else-if="$route.name==='sandTable'"
+        >
+          <SandTable
+              :sand-table="doc.sandTable"
+              :doc="doc"
+              @change="changeSandTableHandle"
+          ></SandTable>
+        </div>
       </div>
     </div>
     <v-dialog
@@ -160,6 +183,7 @@ import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
 import PreviewDlg from './comps/Preview.vue'
 import html2canvas from "html2canvas";
 import HotSpot from './comps/HotSpot.vue'
+import SandTable from './comps/SandTable';
 import {ICON_MAP, SYS_ICON_MAP1} from '@/assets/js/const.js'
 
 
@@ -193,6 +217,11 @@ export default {
         {
           label: '热点',
           value: 'hot',
+          icon: 'mdi-record-circle-outline'
+        },
+        {
+          label: '沙盘',
+          value: 'sandTable',
           icon: 'mdi-map-marker-outline'
         }
       ],
@@ -211,7 +240,7 @@ export default {
       sphere: null
     }
   },
-  components: {PreviewDlg, HotSpot},
+  components: {PreviewDlg, HotSpot, SandTable},
   computed: {
     transformStyle() {
       return (point, item) => {
@@ -513,7 +542,10 @@ export default {
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
     },
-
+    // 沙盘数据修改
+    changeSandTableHandle(data) {
+      this.doc.sandTable = data;
+    }
   },
   mounted() {
     this.activeName = this.$route.name;
@@ -766,5 +798,29 @@ export default {
   }
 }
 
+.sand-table-box {
+  width: 200px;
+  position: absolute;
+  right: 10px;
+  top: 10px;
 
+  .img {
+    width: 100%;
+    height: 100%;
+  }
+
+  img {
+    width: 100%;
+  }
+}
+
+.marker-item {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: blue;
+  border: 2px solid #fff;
+}
 </style>
+

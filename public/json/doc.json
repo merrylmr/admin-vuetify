@@ -176,5 +176,28 @@
       },
       "shape": null
     }
-  ]
+  ],
+  "sandTable": {
+    "url": "img/sandTable.png",
+    "markers": [
+      {
+        "pos": {
+          "x": 100,
+          "y": 90
+        },
+        "angle": 0,
+        "name": "场景1",
+        "sceneId": "xx1"
+      },
+      {
+        "pos": {
+          "x": 120,
+          "y": 90
+        },
+        "angle": 0,
+        "name": "场景2",
+        "sceneId": "xx1"
+      }
+    ]
+  }
 }

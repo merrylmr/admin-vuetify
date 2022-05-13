@@ -123,7 +123,12 @@ const routes = [
                 path: 'hot',
                 name: 'hot',
                 component: () => import ('@/views/threejs/Index.vue'),
-            }
+            },
+            {
+                path: 'sandTable',
+                name: 'sandTable',
+                component: () => import ('@/views/threejs/Index.vue'),
+            },
         ]
     },
     {
