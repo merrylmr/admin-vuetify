@@ -72,7 +72,18 @@
               <div class="marker-item"
                    v-for="(item,index) in doc.sandTable.markers"
                    :key="index"
-                   :style="{left:item.pos.x+'px',top:item.pos.y+'px'}">
+                   :class="{'is-active':activeMarkerIndex===index}"
+                   :style="{left:item.pos.x+'px',top:item.pos.y+'px'}"
+                   @mousedown="markerItemDownHandle($event,item,index)">
+                <div class="marker-item__outline"
+                >
+                  <div class="marker-item__circle"
+                       :style="{transform:`rotate(${item.angle}deg)`}">
+                    <div class="marker-item__point"
+                         @mousedown.stop="pointMouseDownHandle($event,item,index)"
+                    ></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -154,7 +165,9 @@
           <SandTable
               :sand-table="doc.sandTable"
               :doc="doc"
+              :activeIndex="activeMarkerIndex"
               @change="changeSandTableHandle"
+              @changeIndex="changeMarkerIndexHandle"
           ></SandTable>
         </div>
       </div>
@@ -237,7 +250,8 @@ export default {
       uniqueId: '',
       // 每个场景的透视相机参数
       params: {},
-      sphere: null
+      sphere: null,
+      activeMarkerIndex: 0
     }
   },
   components: {PreviewDlg, HotSpot, SandTable},
@@ -545,6 +559,106 @@ export default {
     // 沙盘数据修改
     changeSandTableHandle(data) {
       this.doc.sandTable = data;
+    },
+    // 寻找目标场景
+    findTargetScene(id) {
+      let i = -1;
+      const target = this.doc.scenes.find((item, index) => {
+        if (item.id === id) {
+          i = index;
+        }
+        return item.id === id
+      })
+      return {scene: target, index: i}
+    },
+    markerItemDownHandle(e, item, i) {
+      console.log('e:', e, item);
+      let startX = e.clientX;
+      let startY = e.clientY;
+
+      const mouseMove = (e) => {
+        const x = e.clientX;
+        const y = e.clientY;
+
+        const diffX = x - startX;
+        const diffY = y - startY;
+
+
+        // TODO:边界条件判断
+        item.pos.x += diffX;
+        item.pos.y += diffY;
+
+        startX = e.clientX;
+        startY = e.clientY;
+      }
+      const moveUp = () => {
+        if (this.activeMarkerIndex !== i) {
+          this.activeMarkerIndex = i;
+          // 切换场景
+          const {index} = this.findTargetScene(item.sceneId);
+          this.changeSceneHandle(index);
+        }
+        document.body.removeEventListener('mousemove', mouseMove)
+        document.body.removeEventListener('mouseup', moveUp)
+      }
+      document.body.addEventListener('mousemove', mouseMove)
+      document.body.addEventListener('mouseup', moveUp)
+    },
+    // 拖拽旋转
+    pointMouseDownHandle(e, item, index) {
+      const nodeList = this.$el.querySelectorAll('.marker-item');
+      const dom = nodeList[index].querySelector('.marker-item__outline');
+      const domRect = dom.getBoundingClientRect();
+
+      const centerPos = {
+        x: domRect.width / 2 + domRect.x,
+        y: domRect.height / 2 + domRect.y,
+      }
+      let mouseMove = (e) => {
+        const curMouse = {
+          x: e.clientX,
+          y: e.clientY,
+        }
+        // https://blog.csdn.net/wjlhanhan/article/details/109668342
+        const radians = Math.atan2(curMouse.x - centerPos.x, curMouse.y - centerPos.y);
+        let angle = (radians * (180 / Math.PI) * -1) + 180
+        // 沙盘旋转角度转化到相机
+        console.log('angle:', angle)
+        item.angle = angle;
+        this.rotate2cameraPos(angle)
+      }
+
+      let mouseUp = () => {
+        console.log('mouseUp')
+        document.body.removeEventListener('mousemove', mouseMove)
+        document.body.removeEventListener('mouseup', mouseUp)
+      }
+
+      document.body.addEventListener('mousemove', mouseMove)
+      document.body.addEventListener('mouseup', mouseUp)
+    },
+    // 已知水平角度，转化成相机的坐标
+    // https://www.wjceo.com/blog/threejs2/2018-12-05/181.html
+    rotate2cameraPos(angle) {
+      // 距离
+      const r = this.controls.object.position.distanceTo(this.controls.target);
+      // 垂直方向角度（y轴）
+      const phi = this.controls.getPolarAngle();
+      // 水平方向的角度（x轴）
+      const theta = angle * Math.PI / 180;
+      const controls = this.controls;
+      const x = r * Math.cos(phi - Math.PI / 2) * Math.sin(theta) + controls.target.x;
+      const y = r * Math.sin(phi + Math.PI / 2) + controls.target.y;
+      const z = r * Math.cos(phi - Math.PI / 2) * Math.cos(theta) + controls.target.z;
+      controls.object.position.set(x, y, z);
+      controls.object.lookAt(controls.target);
+      console.log('x:', x, 'y:', y, 'z:', z)
+      this.doc.scenes[this.activeIndex].cameraPos = {x, y, z}
+      controls.update();
+    },
+
+    changeMarkerIndexHandle(index) {
+      this.activeMarkerIndex = index;
     }
   },
   mounted() {
@@ -811,6 +925,8 @@ export default {
 
   img {
     width: 100%;
+    -webkit-user-drag: none;
+    pointer-events: none;
   }
 }
 
@@ -821,6 +937,48 @@ export default {
   border-radius: 50%;
   background-color: blue;
   border: 2px solid #fff;
+
+  &.is-active {
+    background-color: orange;
+
+    .marker-item__outline {
+      display: block;
+    }
+  }
+
+  &__outline {
+    width: 30px;
+    height: 30px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border: 1px solid orange;
+    border-radius: 50%;
+    display: none;
+  }
+
+  &__circle {
+    position: absolute;
+    width: 2px;
+    height: 15px;
+    left: 50%;
+    top: 0;
+    background-color: transparent;
+    transform-origin: 0 15px;
+  }
+
+  &__point {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background-color: red;
+    border-radius: 50%;
+    top: 0%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    cursor: ew-resize;
+  }
 }
 </style>
 

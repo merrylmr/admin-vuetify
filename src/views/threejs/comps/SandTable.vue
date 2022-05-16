@@ -19,9 +19,15 @@
       <div class="marker-list mt-2">
         <div class="marker-item"
              v-for="(item,index) in sandTable.markers"
-             :key="index">
-          <span class="circle"></span>
-          {{ item.name }}
+             :key="index"
+             :class="{'is-active':index===activeIndex}"
+             @click="clickMarkerHandle(index,item)">
+          <span><span class="circle"></span>
+          {{ item.name }}</span>
+          <div class="marker-item__del"
+               @click="delMarkerHandle(index)">
+            删除
+          </div>
         </div>
       </div>
     </div>
@@ -58,6 +64,9 @@ export default {
           scenes: []
         }
       }
+    },
+    activeIndex: {
+      type: Number
     }
   },
   components: {SceneDlg},
@@ -68,7 +77,7 @@ export default {
         markers: []
       },
       isShowSceneDlg: false,
-      activeIndex: -1
+      // activeIndex: -1
     }
   },
   methods: {
@@ -95,7 +104,18 @@ export default {
     },
     sureHandle(data) {
       this.isShowSceneDlg = false;
-      this.sureAddMarker(data);
+      if (data) {
+        this.sureAddMarker(data);
+      }
+    },
+    clickMarkerHandle(index) {
+      this.$emit('changeIndex', index)
+    },
+    // 删除点位
+    delMarkerHandle(index) {
+      const sandTableClone = this._.cloneDeep(this.sandTable);
+      sandTableClone.markers.splice(index, 1)
+      this.$emit('change', sandTableClone)
     }
   },
   created() {
@@ -113,9 +133,20 @@ export default {
 .marker-item {
   padding: 10px;
   cursor: pointer;
+  @include flex(space-between, center);
+
+  &.is-active {
+    .circle {
+      background-color: $--color-primary;
+    }
+  }
 
   &:hover {
     background-color: #fafafa;
+
+    .marker-item__del {
+      opacity: 1;
+    }
   }
 
   .circle {
@@ -124,6 +155,10 @@ export default {
     border-radius: 50%;
     background-color: #eee;
     display: inline-block;
+  }
+
+  &__del {
+    opacity: 0;
   }
 }
 </style>

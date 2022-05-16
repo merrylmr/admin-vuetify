@@ -33,15 +33,38 @@
       </div>
     </div>
     <!--  沙盘  -->
-    <div class="sand-table">
-      <div class="point"
-           @mousedown="sandMouseDownHandle"
-           :style="{transform:`rotate(${rotate}deg)`}">
-        <div class="circle"></div>
-        <div class="img">
-          <img src="img/sand.png">
-        </div>
+    <!--    <div class="sand-table">-->
+    <!--      <div class="point"-->
+    <!--           @mousedown="sandMouseDownHandle"-->
+    <!--           :style="{transform:`rotate(${rotate}deg)`}">-->
+    <!--        <div class="circle"></div>-->
+    <!--        <div class="img">-->
+    <!--          <img src="img/sand.png">-->
+    <!--        </div>-->
 
+    <!--      </div>-->
+    <!--    </div>-->
+    <div class="sand-table-box">
+      <div class="marker-list">
+        <div class="img">
+          <img :src="doc.sandTable.url">
+        </div>
+        <div class="marker-item"
+             v-for="(item,index) in doc.sandTable.markers"
+             :key="index"
+             :class="{'is-active':activeMarkerIndex===index}"
+             :style="{left:item.pos.x+'px',top:item.pos.y+'px'}"
+             @click="markerClickHandle(index,item)">
+          <div class="marker-item__outline"
+          >
+            <div class="marker-item__circle"
+                 :style="{transform:`rotate(${activeMarkerIndex===index?rotate:item.angle}deg)`}">
+              <div class="marker-item__point"
+                   @mousedown.stop="pointMouseDownHandle($event,item,index)"
+              ></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </v-card>
@@ -85,7 +108,8 @@ export default {
       needUpdate: [],
       hotLabelStyleArr: [],
       rotate: 0,
-      targetPosition: new THREE.Vector3(0, 0, 0)
+      targetPosition: new THREE.Vector3(0, 0, 0),
+      activeMarkerIndex: 0
     }
   },
   computed: {
@@ -114,6 +138,7 @@ export default {
       const arr = [];
       this.hotPointList.forEach(item => {
         const visible = pointInSceneView(item.pos, this.camera)
+        console.log('hotLabelStyles visible：', visible)
         if (visible) {
           let pos = worldVector2Screen({
             x: item.pos.x,
@@ -145,6 +170,14 @@ export default {
     degToRad(deg) {
       return Math.PI / 180 * deg
     },
+    // 通过场景Id在沙盘点位列表中，寻找沙盘点位
+    findSandTableMarker(sceneId) {
+      const markers = this.doc.sandTable.markers;
+      const index = markers.findIndex(item => {
+        return item.sceneId === sceneId
+      })
+      return index
+    },
     /**
      *
      *  切换场景
@@ -155,6 +188,7 @@ export default {
     async changeSceneHandle(data, index) {
       if (this.activeIndex === index) return
       this.activeIndex = index;
+      this.activeMarkerIndex = this.findSandTableMarker(data.id)
       // 清空场景的元素（热点）
       this.scene.children = this.scene.children.filter(item => {
         return item.type !== 'Sprite'
@@ -320,6 +354,7 @@ export default {
       this.clock = new THREE.Clock();
       const container = document.getElementById('preview');
       this.container = container;
+      this.rotate = this._.get(this.doc, 'sandTable.markers[0].angle') || 0;
       this.initScene();
       this.initCamera(container, data);
       this.initRenderer(container);
@@ -329,13 +364,17 @@ export default {
       // 渲染热点
       const points = data.hotSpots
       this.poiObjects = await this.renderPointList(this.scene, points)
-      this.hotLabelStyles();
+      // ??:解决热点文字显示隐藏问题，问题暂时未定位出来
+      setTimeout(() => {
+        this.hotLabelStyles();
+      })
+
       this.render();
 
       console.log('this.camera:', this.camera)
 
       this.controls.addEventListener('change', () => {
-
+        console.log('controls change-----11:')
         console.log('getAzimuthalAngle ():', this.controls.getAzimuthalAngle() * 180 / Math.PI)
         this.rotate = this.controls.getAzimuthalAngle() * 180 / Math.PI;
         this.hotLabelStyles();
@@ -422,6 +461,7 @@ export default {
       controls.object.position.set(x, y, z);
       controls.object.lookAt(controls.target);
       controls.update();
+      return {x, y, z}
     },
     sandMouseDownHandle() {
       const dom = this.$el.querySelector('.point');
@@ -450,6 +490,49 @@ export default {
 
       document.body.addEventListener('mousemove', mouseMove)
       document.body.addEventListener('mouseup', mouseUp)
+    },
+    markerClickHandle(i, item) {
+      if (this.activeMarkerIndex === i) {
+        return
+      }
+      // this.activeMarkerIndex = i;
+      const {scene, index} = this.findTargetScene(item.sceneId);
+      this.changeSceneHandle(scene, index);
+    },
+    // 沙盘上的点移动
+    pointMouseDownHandle(e, item, index) {
+      const nodeList = this.$el.querySelectorAll('.marker-item');
+      const dom = nodeList[index].querySelector('.marker-item__outline');
+      const domRect = dom.getBoundingClientRect();
+
+      const centerPos = {
+        x: domRect.width / 2 + domRect.x,
+        y: domRect.height / 2 + domRect.y,
+      }
+      let mouseMove = (e) => {
+        const curMouse = {
+          x: e.clientX,
+          y: e.clientY,
+        }
+        // https://blog.csdn.net/wjlhanhan/article/details/109668342
+        const radians = Math.atan2(curMouse.x - centerPos.x, curMouse.y - centerPos.y);
+        let angle = (radians * (180 / Math.PI) * -1) + 180
+        // 沙盘旋转角度转化到相机
+        console.log('angle:', angle)
+        item.angle = angle;
+        this.rotate2cameraPos(angle);
+
+      }
+
+      let mouseUp = () => {
+        console.log('mouseUp')
+        document.body.removeEventListener('mousemove', mouseMove)
+        document.body.removeEventListener('mouseup', mouseUp)
+      }
+
+      document.body.addEventListener('mousemove', mouseMove)
+      document.body.addEventListener('mouseup', mouseUp)
+
     }
   },
   mounted() {
@@ -593,4 +676,75 @@ export default {
     }
   }
 }
+
+.sand-table-box {
+  width: 200px;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+
+  .img {
+    width: 100%;
+    height: 100%;
+  }
+
+  img {
+    width: 100%;
+    -webkit-user-drag: none;
+    pointer-events: none;
+    user-select: none;
+  }
+}
+
+.marker-item {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: blue;
+  border: 2px solid #fff;
+
+  &.is-active {
+    background-color: orange;
+
+    .marker-item__outline {
+      display: block;
+    }
+  }
+
+  &__outline {
+    width: 30px;
+    height: 30px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border: 1px solid orange;
+    border-radius: 50%;
+    display: none;
+  }
+
+  &__circle {
+    position: absolute;
+    width: 2px;
+    height: 15px;
+    left: 50%;
+    top: 0;
+    background-color: transparent;
+    transform-origin: 0 15px;
+  }
+
+  &__point {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background-color: red;
+    border-radius: 50%;
+    top: 0%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    cursor: ew-resize;
+  }
+}
+
 </style>

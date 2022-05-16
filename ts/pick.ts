@@ -32,6 +32,9 @@ type Pick<T, K extends keyof T> = {
     [P in K]: T[P]
 }
 
+type MyReadonly<T> = {
+    readonly [P in keyof T]: T[P];
+}
 interface User {
     id: number,
     age: number,
