@@ -44,3 +44,8 @@ interface User {
 type ParticalUser = Partial<User>
 
 type typeUser = Pick<User, "id" | "age">
+
+
+type TupleToObject<T extends readonly (number| string| symbol)[]> = {
+    [P in  T[number]]: P
+}

@@ -58,7 +58,7 @@
           <div class="marker-item__outline"
           >
             <div class="marker-item__circle"
-                 :style="{transform:`rotate(${activeMarkerIndex===index?rotate:item.angle}deg)`}">
+                 :style="{transform:`rotate(${item.angle}deg)`}">
               <div class="marker-item__point"
                    @mousedown.stop="pointMouseDownHandle($event,item,index)"
               ></div>
@@ -376,7 +376,19 @@ export default {
       this.controls.addEventListener('change', () => {
         console.log('controls change-----11:')
         console.log('getAzimuthalAngle ():', this.controls.getAzimuthalAngle() * 180 / Math.PI)
-        this.rotate = this.controls.getAzimuthalAngle() * 180 / Math.PI;
+        const angleX = this.controls.getAzimuthalAngle() * 180 / Math.PI;
+        this.rotate = angleX;
+
+        // TODO:这里待优化
+        const marker = this.doc.sandTable.markers[this.activeMarkerIndex];
+        if (marker) {
+          const {scene} = this.findTargetScene(marker.sceneId);
+          marker.angle += (angleX - scene.angleX);
+          marker.angle = marker.angle % 360;
+          scene.angleX = angleX
+        }
+
+
         this.hotLabelStyles();
       });
     },

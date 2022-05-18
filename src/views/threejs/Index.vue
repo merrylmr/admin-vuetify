@@ -152,7 +152,7 @@
           <HotSpot
               :list="hotSpots"
               :activePoint="activePoint"
-              :doc="doc"
+              :doc="_.cloneDeep(doc)"
               @addPoint="addPointHandle"
               @change="changePointHandle"
               @cancel="cancelPointHandle"
@@ -251,7 +251,7 @@ export default {
       // 每个场景的透视相机参数
       params: {},
       sphere: null,
-      activeMarkerIndex: 0
+      activeMarkerIndex: 0,
     }
   },
   components: {PreviewDlg, HotSpot, SandTable},
@@ -377,6 +377,8 @@ export default {
     // 设置当前视觉
     setCameraPosHandle() {
       this.doc.scenes[this.activeIndex].cameraPos = this._.cloneDeep(this.camera.position);
+      // 获取水平角度
+      this.doc.scenes[this.activeIndex].angleX = this.controls.getAzimuthalAngle() * 180 / Math.PI;
       this.createThumbnail()
     },
     // 切换左侧菜单
@@ -625,11 +627,15 @@ export default {
         // 沙盘旋转角度转化到相机
         console.log('angle:', angle)
         item.angle = angle;
-        this.rotate2cameraPos(angle)
+
+
+        this.doc.sandTable.markers[index].angle = angle;
+
+        // this.rotate2cameraPos(angle)
       }
 
       let mouseUp = () => {
-        console.log('mouseUp')
+        console.log('mouseup')
         document.body.removeEventListener('mousemove', mouseMove)
         document.body.removeEventListener('mouseup', mouseUp)
       }
@@ -667,11 +673,22 @@ export default {
 
     this.$nextTick(async () => {
       await this.init();
-      const changeHandle = () => {
+
+      const controlChangeHandle = () => {
         this.uniqueId = randomString()
-        this.render()
+        this.render();
+        // 获取水平的角度
+        const angleX = this.controls.getAzimuthalAngle() * 180 / Math.PI;
+
+        // TODO: 在场景对象中寻找初始的水平角度
+        const marker = this.doc.sandTable.markers[this.activeMarkerIndex];
+        const {scene} = this.findTargetScene(marker.sceneId);
+        marker.angle += (angleX - scene.angleX);
+        marker.angle = marker.angle % 360;
+        scene.angleX = angleX
+        console.log('angleX：', angleX, marker.angle, 'this.initAngleX:', this.initAngleX, angleX)
       }
-      this.controls.addEventListener('change', changeHandle);
+      this.controls.addEventListener('change', controlChangeHandle);
       window.addEventListener('resize', this.resizeHandle);
       // 生成场景缩略图
       this.createThumbnail();
