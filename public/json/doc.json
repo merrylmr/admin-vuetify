@@ -186,8 +186,7 @@
           "x": 40,
           "y": 90
         },
-        "angle": 0,
-        "diffAngle": 90,
+        "angle": 90,
         "name": "场景1",
         "sceneId": "xxx1"
       },

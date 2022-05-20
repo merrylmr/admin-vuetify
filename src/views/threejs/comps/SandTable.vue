@@ -37,6 +37,7 @@
         :visible="isShowSceneDlg"
         :doc="doc"
         :scene-id="form.value"
+        :checked="checkedSceneIds"
         @close="isShowSceneDlg=false"
         @sure="sureHandle">
     </SceneDlg>
@@ -80,6 +81,14 @@ export default {
       // activeIndex: -1
     }
   },
+  computed: {
+    checkedSceneIds() {
+      const markers = this.sandTable.markers;
+      return markers.map(item => {
+        return item.sceneId
+      })
+    }
+  },
   methods: {
     changeHandle() {
       this.$emit('change', this.form)
@@ -104,12 +113,13 @@ export default {
     },
     sureHandle(data) {
       this.isShowSceneDlg = false;
-      if (data) {
+      console.log('sureHandle', data);
+      if (data && data.id) {
         this.sureAddMarker(data);
       }
     },
-    clickMarkerHandle(index) {
-      this.$emit('changeIndex', index)
+    clickMarkerHandle(index, item) {
+      this.$emit('changeIndex', index, item)
     },
     // 删除点位
     delMarkerHandle(index) {

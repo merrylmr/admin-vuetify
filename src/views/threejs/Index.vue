@@ -574,7 +574,6 @@ export default {
       return {scene: target, index: i}
     },
     markerItemDownHandle(e, item, i) {
-      console.log('e:', e, item);
       let startX = e.clientX;
       let startY = e.clientY;
 
@@ -663,8 +662,11 @@ export default {
       controls.update();
     },
 
-    changeMarkerIndexHandle(index) {
-      this.activeMarkerIndex = index;
+    changeMarkerIndexHandle(i, item) {
+      this.activeMarkerIndex = i;
+      //  切换场景
+      const {index} = this.findTargetScene(item.sceneId);
+      this.changeSceneHandle(index)
     }
   },
   mounted() {

@@ -8,18 +8,20 @@
       <v-card-title>选择场景</v-card-title>
       <div class="wrapper">
         <div class="scene-lit">
-          <div class="scene-item"
-               v-for="(item,index) in doc.scenes"
-               :key="index"
-               :class="{'is-active':selectedItem.id===item.id}"
-               @click="clickItemHandle(item)">
-            <div class="scene-item__img">
-              <img :src="item.url" alt="">
+          <template v-for="(item,index) in doc.scenes">
+            <div class="scene-item"
+                 :key="index"
+                 v-if="!checked.includes(item.id)"
+                 :class="{'is-active':selectedItem.id===item.id}"
+                 @click="clickItemHandle(item)">
+              <div class="scene-item__img">
+                <img :src="item.url" alt="">
+              </div>
+              <div class="scene-item__name">
+                {{ item.name }}
+              </div>
             </div>
-            <div class="scene-item__name">
-              {{ item.name }}
-            </div>
-          </div>
+          </template>
         </div>
 
 
@@ -57,6 +59,10 @@ export default {
     },
     sceneId: {
       type: String,
+    },
+    checked: {
+      type: Array,
+      default: () => []
     }
   },
   data() {
