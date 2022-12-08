@@ -65,8 +65,9 @@
           <div class="sand-table-box"
                v-if="$route.name==='sandTable'"
                id="sandTableBox">
-            <div class="img">
-              <img :src="doc.sandTable.url">
+            <div class="img"
+            >
+              <img :src="doc.sandTable.url" draggable="false">
             </div>
             <div class="marker-list">
               <div class="marker-item"
@@ -80,7 +81,7 @@
                   <div class="marker-item__circle"
                        :style="{transform:`rotate(${item.angle}deg)`}">
                     <div class="marker-item__point"
-                         @mousedown.stop="pointMouseDownHandle($event,item,index)"
+                         @mousedown.stop.prevent="pointMouseDownHandle($event,item,index)"
                     ></div>
                   </div>
                 </div>
@@ -453,18 +454,31 @@ export default {
       document.body.addEventListener('mousemove', mouseMoveHandle)
       document.body.addEventListener('mouseup', mouseUpHandle)
     },
+    findSandMarkerIndex(sceneId) {
+      const sandTable = this.doc.sandTable.markers;
+      console.log('sandTable:', sandTable)
+      return sandTable.findIndex(item => {
+        return item.sceneId === sceneId
+      })
+
+    },
     // 切换场景
     async changeSceneHandle(index) {
+      const scene = this.doc.scenes[index];
+      if (this.$route.name === 'sandTable') {
+        this.activeMarkerIndex = this.findSandMarkerIndex(scene.id)
+        console.log('activeMarkerIndex:', this.activeMarkerIndex);
+      }
       this.activeIndex = index;
-      this.params = this.doc.scenes[this.activeIndex].params;
+      this.params = scene.params;
       // 选中的热点置空
       this.activePoint = {};
       // TODO:当前的场景重新渲染 + 生成缩略图
       if (this.activeItem.shape) {
         this.sphere.material = this.activeItem.shape;
       } else {
-        const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
-        sphereGeometry.scale(1, 1, -1);
+        // const sphereGeometry = new THREE.SphereGeometry(1, 50, 50);
+        // sphereGeometry.scale(1, 1, -1);
 
         const texture = await this.textureLoaderHandle(this.activeItem.url)
         const sphereMaterial = new THREE.MeshBasicMaterial({map: texture});
@@ -682,7 +696,7 @@ export default {
         // 获取水平的角度
         const angleX = this.controls.getAzimuthalAngle() * 180 / Math.PI;
 
-        // TODO: 在场景对象中寻找初始的水平角度
+        if (this.activeMarkerIndex === -1) return
         const marker = this.doc.sandTable.markers[this.activeMarkerIndex];
         const {scene} = this.findTargetScene(marker.sceneId);
         marker.angle += (angleX - scene.angleX);
@@ -945,7 +959,8 @@ export default {
   img {
     width: 100%;
     -webkit-user-drag: none;
-    pointer-events: none;
+    user-drag: none;
+    user-select: none;
   }
 }
 

@@ -46,6 +46,22 @@ type ParticalUser = Partial<User>
 type typeUser = Pick<User, "id" | "age">
 
 
-type TupleToObject<T extends readonly (number| string| symbol)[]> = {
-    [P in  T[number]]: P
+type TupleToObject<T extends readonly (number | string | symbol)[]> = {
+    [P in T[number]]: P
+}
+
+
+type First<T extends any[]> = T['length'] extends 0 ? never : T[0]
+
+//1 TS判断条件使用extend
+// type First<T extends readonly any[]> =T extends [] ?never: T[0]
+
+//2 获取tuple的length属性
+// type First<T extends readonly any[]> =T['length'] extends 0 ?never: T[0]
+
+//3 extends union 判断规则
+// type First<T extends readonly any[]> =T[0] extends T[number] ? T[0] : never
+
+function fail(msg: string): never {
+    throw new Error(msg);
 }

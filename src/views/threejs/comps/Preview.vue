@@ -47,7 +47,8 @@
     <div class="sand-table-box">
       <div class="marker-list">
         <div class="img">
-          <img :src="doc.sandTable.url">
+          <img :src="doc.sandTable.url"
+               draggable="false">
         </div>
         <div class="marker-item"
              v-for="(item,index) in doc.sandTable.markers"
@@ -60,7 +61,7 @@
             <div class="marker-item__circle"
                  :style="{transform:`rotate(${item.angle}deg)`}">
               <div class="marker-item__point"
-                   @mousedown.stop="pointMouseDownHandle($event,item,index)"
+                   @mousedown.stop.prevent="pointMouseDownHandle($event,item,index)"
               ></div>
             </div>
           </div>
@@ -522,6 +523,7 @@ export default {
         y: domRect.height / 2 + domRect.y,
       }
       let mouseMove = (e) => {
+        e.preventDefault()
         const curMouse = {
           x: e.clientX,
           y: e.clientY,
@@ -702,8 +704,8 @@ export default {
 
   img {
     width: 100%;
+    user-drag: none;
     -webkit-user-drag: none;
-    pointer-events: none;
     user-select: none;
   }
 }

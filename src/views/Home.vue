@@ -176,6 +176,11 @@ export default {
           ]
         },
         {
+          label: '全景工具',
+          value: 'editor-3d',
+          icon: 'mdi-cube-scan'
+        },
+        {
           label: '国际化',
           value: 'international',
           icon: 'mdi-earth'
