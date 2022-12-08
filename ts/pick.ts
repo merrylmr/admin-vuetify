@@ -62,6 +62,7 @@ type First<T extends any[]> = T['length'] extends 0 ? never : T[0]
 //3 extends union 判断规则
 // type First<T extends readonly any[]> =T[0] extends T[number] ? T[0] : never
 
+
 function fail(msg: string): never {
     throw new Error(msg);
 }
