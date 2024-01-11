@@ -3,6 +3,9 @@ const path = require('path')
 // const Renderer = PrerenderSPAPlugin.PuppeteerRenderer;
 const IsProd = process.env.NODE_ENV === 'production';
 module.exports = {
+    publicPath: process.env.NODE_ENV === 'production'
+        ? '/admin-vuetify/'
+        : '/',
     configureWebpack: () => {
         const plugins = IsProd ? [
             // new PrerenderSPAPlugin({
