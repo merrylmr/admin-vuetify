@@ -102,7 +102,8 @@ export default {
     // 获取geoJson数据
     async getGeoJSONData(code = 100000) {
       try {
-        const res = await axios.get(`/json/${code}.json`);
+        const baseUrl = process.env.NODE_ENV === 'production' ? '/admin-vuetify' : '';
+        const res = await axios.get(`${baseUrl}/json/${code}.json`);
         return res;
       } catch (err) {
         console.error('获取geoJson数据出错', err)
